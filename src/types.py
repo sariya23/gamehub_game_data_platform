@@ -1,1 +1,3 @@
-Seconds: type = int
+from typing import TypeAlias
+
+Seconds: TypeAlias = int
