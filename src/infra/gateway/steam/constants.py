@@ -1,4 +1,5 @@
 STEAM_API_BASE_URL = "https://api.steampowered.com"
+STEAM_STORE_BASE_URL = "https://store.steampowered.com"
 STEAM_API_INTERFACE_STORE_SERVICE = "IStoreService"
 STEAM_API_METHOD_GET_APP_LIST = "GetAppList"
 STEAM_API_VERSION_V1 = "v1"

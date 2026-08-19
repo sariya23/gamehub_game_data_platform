@@ -148,3 +148,10 @@ class AppDetailsResult(BaseModel):
 
 class AppDetailsResponse(RootModel[dict[str, AppDetailsResult]]):
     pass
+
+
+class StoreApiAppDetailsRequestDTO(BaseModel):
+    appids: int
+    cc: str | None = None
+    l: str | None = None
+    
