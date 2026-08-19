@@ -1,0 +1,1 @@
+Seconds: type = int
