@@ -1,7 +1,11 @@
-from dataclasses import dataclass
+from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel
 
 
-@dataclass
-class SourceResponse:
+class RawBatch(BaseModel):
     source: str
-    data: dict
+    resource: str
+    extracted_at: datetime
+    records: list[dict[str, Any]]

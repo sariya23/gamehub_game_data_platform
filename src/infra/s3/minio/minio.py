@@ -1,6 +1,7 @@
+from io import BytesIO
+
 import structlog
 from minio import Minio as MinioClient
-from io import BytesIO
 
 log = structlog.get_logger()
 
@@ -21,5 +22,5 @@ class Minio:
         try:
             self.__client.put_object(bucket_name=self.bucket_name, object_name=object_name, data=data, length=l)
             log.info(f"object with name '{object_name}' saved in s3")
-        except Exception as e:
+        except Exception:
             log.error("cannot save object in s3 with error '{e}'")

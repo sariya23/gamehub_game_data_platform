@@ -28,22 +28,20 @@ class SteamApi:
     ) -> IStoreServiceGetAppListV1ResponseDTO:
         base_url = httpx.URL(self.__base_api_url)
         url_path = f"/{STEAM_API_INTERFACE_STORE_SERVICE}/{STEAM_API_METHOD_GET_APP_LIST}/{STEAM_API_VERSION_V1}/"
-        with self.__client as client:
-            response = client.get(
-            url=base_url.join(url_path),
-            params=request.model_dump(exclude_none=True),
-        )
+        response = self.__client.get(
+        url=base_url.join(url_path),
+        params=request.model_dump(exclude_none=True))
+        
         
         response.raise_for_status()
         return IStoreServiceGetAppListV1ResponseDTO.model_validate(response.json())
     
     def store_api_app_details(self, request: StoreApiAppDetailsRequestDTO) -> AppDetailsResponseDTO:
         base_url = httpx.URL(self.__base_store_url)
-        with self.__client as client:
-            response = client.get(
-            url=base_url.join(APP_DETAILS_URL),
-            params=request.model_dump(exclude_none=True),
-        )
+        response = self.__client.get(
+        url=base_url.join(APP_DETAILS_URL),
+        params=request.model_dump(exclude_none=True))
+        
         response.raise_for_status()
         return AppDetailsResponseDTO.model_validate(response.json())
             
