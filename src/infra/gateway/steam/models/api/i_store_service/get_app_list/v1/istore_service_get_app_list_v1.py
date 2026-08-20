@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 
 
 class IStoreServiceGetAppListV1ResponseSteamApp(BaseModel):
-    app_id: int
+    appid: int
     name: str
     last_modified: int
     price_change_number: int

@@ -146,12 +146,12 @@ class AppDetailsResult(BaseModel):
     data: AppDetails | None = None
 
 
-class AppDetailsResponse(RootModel[dict[str, AppDetailsResult]]):
+class AppDetailsResponseDTO(RootModel[dict[str, AppDetailsResult]]):
     pass
 
 
 class StoreApiAppDetailsRequestDTO(BaseModel):
     appids: int
-    cc: str | None = None
-    l: str | None = None
+    cc: str | None = "ru"
+    l: str | None = "russian"
     
