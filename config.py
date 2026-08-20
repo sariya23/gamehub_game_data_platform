@@ -27,10 +27,16 @@ class S3Config(BaseModel):
     api_port: int
     root_user: str
     root_password: SecretStr
+    host: str
+    secure: bool
+
+class EnvConfig(BaseModel):
+    type: str
 
 class Config(BaseSettings):
     steam: SteamConfig
     s3: S3Config   
+    env: EnvConfig  
 
     model_config = SettingsConfigDict(
         env_file=".env",
