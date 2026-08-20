@@ -21,8 +21,14 @@ class SteamConfig(BaseModel):
     auth: SteamAuthKeyConfig
     http: SteamHTTPConfig
 
+
+class S3Config(BaseModel):
+    admin_port: int
+    api_port: int
+
 class Config(BaseSettings):
     steam: SteamConfig
+    s3: S3Config   
 
     model_config = SettingsConfigDict(
         env_file=".env",

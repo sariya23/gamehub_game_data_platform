@@ -1,0 +1,35 @@
+name: gamehub_game_data_platform
+
+x-minio-common: &minio-common
+  image: quay.io/minio/aistor/minio:latest
+  environment:
+    DATA_LAKE_ADMIN_PORT: ${S3__ADMIN_PORT}
+    DATA_LAKE_API_PORT: ${S3__API_PORT}
+    MINIO_ROOT_USER: minioadmin
+    MINIO_ROOT_PASSWORD: minioadmin
+  command: server --console-address ":9001" minio1/data1 --license minio.license
+  ports:
+    - "${S3__ADMIN_PORT}:${S3__ADMIN_PORT}"
+    - "${S3__API_PORT}:${S3__API_PORT}"
+  healthcheck:
+    test: ["CMD", "mc", "ready", "local"]
+    interval: 5s
+    timeout: 5s
+    retries: 5
+  networks:
+    - intranet
+
+services:
+  minio1:
+    <<: *minio-common
+    hostname: minio1
+    volumes:
+      - data1:/data1
+      - ./minio.license:/minio.license:ro
+
+volumes:
+  data1:
+
+networks:
+  intranet:
+    external: true
