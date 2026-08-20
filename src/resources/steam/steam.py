@@ -1,8 +1,16 @@
 from collections.abc import Iterator
 
-from src.infra.gateway.steam.steam import IStoreServiceGetAppListV1RequestDTO, SteamApi, StoreApiAppDetailsRequestDTO, AppDetailsResponseDTO
-from src.infra.gateway.steam.models.api.i_store_service.get_app_list.v1.istore_service_get_app_list_v1 import IStoreServiceGetAppListV1ResponseSteamApp
+from src.infra.gateway.steam.models.api.i_store_service.get_app_list.v1.istore_service_get_app_list_v1 import (
+    IStoreServiceGetAppListV1ResponseSteamApp,
+)
+from src.infra.gateway.steam.steam import (
+    AppDetailsResponseDTO,
+    IStoreServiceGetAppListV1RequestDTO,
+    SteamApi,
+    StoreApiAppDetailsRequestDTO,
+)
 from src.lib.rate_limit.rate_limit import RateLimiter
+
 
 class SteamAppListResource:
     def __init__(self, steam_api: SteamApi):
