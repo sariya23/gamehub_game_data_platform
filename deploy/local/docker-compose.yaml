@@ -5,8 +5,8 @@ x-minio-common: &minio-common
   environment:
     DATA_LAKE_ADMIN_PORT: ${S3__ADMIN_PORT}
     DATA_LAKE_API_PORT: ${S3__API_PORT}
-    MINIO_ROOT_USER: minioadmin
-    MINIO_ROOT_PASSWORD: minioadmin
+    MINIO_ROOT_USER: ${S3__ROOT_USER}
+    MINIO_ROOT_PASSWORD: ${S3__ROOT_PASSWORD}
   command: server --console-address ":9001" minio1/data1 --license minio.license
   ports:
     - "${S3__ADMIN_PORT}:${S3__ADMIN_PORT}"

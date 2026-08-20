@@ -25,6 +25,8 @@ class SteamConfig(BaseModel):
 class S3Config(BaseModel):
     admin_port: int
     api_port: int
+    root_user: str
+    root_password: SecretStr
 
 class Config(BaseSettings):
     steam: SteamConfig
