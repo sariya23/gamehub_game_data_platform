@@ -1,12 +1,16 @@
 import httpx
 
 from src.infra.gateway.steam.constants import (
+    APP_DETAILS_URL,
     STEAM_API_INTERFACE_STORE_SERVICE,
     STEAM_API_METHOD_GET_APP_LIST,
     STEAM_API_VERSION_V1,
 )
 from src.infra.gateway.steam.models.api.i_store_service.get_app_list.v1.istore_service_get_app_list_v1 import (
     IStoreServiceGetAppListV1RequestDTO,
+)
+from src.infra.gateway.steam.models.store.api.app_details.store_api_app_details import (
+    StoreApiAppDetailsRequestDTO,
 )
 from src.types import Seconds
 
@@ -16,8 +20,7 @@ class SteamApi:
         self.__client = httpx.Client(timeout=timeout, headers={"x-webapi-key": web_api_token})
         self.__base_api_url = base_url_api
         self.__base_store_url = base_store_url
-        self.__token = web_api_token
-    
+
     def isotre_service_get_app_list_v1(
         self,
         request: IStoreServiceGetAppListV1RequestDTO,
@@ -31,3 +34,14 @@ class SteamApi:
         response.raise_for_status()
 
         return response.json()
+    
+    def app_details(self, request: StoreApiAppDetailsRequestDTO):
+        base_url = httpx.URL(self.__base_store_url)
+        response = self.__client.get(
+            url=base_url.join(APP_DETAILS_URL),
+            params=request.model_dump(exclude_none=True),
+        )
+        response.raise_for_status()
+
+        return response.json()
+            
