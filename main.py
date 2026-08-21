@@ -4,6 +4,7 @@ from io import BytesIO
 import structlog
 
 from config import load_config
+from src.models.silver.exceptions import SilverRequiredFiledException
 from src.http.clients.steam import create_steam_api_http_client
 from src.infra.gateway.steam.constants import STEAM_API_BASE_URL, STEAM_STORE_BASE_URL
 from src.infra.gateway.steam.create import create_steam_api_client
@@ -65,5 +66,9 @@ for batch_number, batch in enumerate(app_detail_batches, start=1):
 
 for app_detail_raw in m.get_files("gamehub", "raw/steam/app_detail/2026/8/21/"):
     raw_model = RawSteamApp.model_validate_json(app_detail_raw)
-    log.info(raw_model)
-    silver_model = SilverSteamApp.from_raw(raw_model)
+    try:
+        silver_model = SilverSteamApp.from_raw(raw_model)
+    except SilverRequiredFiledException as e:
+        log.warning(f"cannot transform silver model from raw. Exception: {e}, app id: {raw_model.steam_appid}")
+        continue
+        
