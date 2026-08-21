@@ -35,7 +35,7 @@ class SteamAppListResource:
                 break
 
             yield RawBatch(
-                source="steam",
+                source=self.source_name,
                 resource="app_list",
                 records=[
                     app.model_dump(mode="json")
@@ -53,6 +53,8 @@ class SteamAppListResource:
 
     
 class SteamAppDetailResource:
+    source_name = "steam"
+    
     def __init__(self, steam_api: ISteamAppDetail, rate_limiter: AbstractContextManager):
         self.__steam_api = steam_api
         self.__rate_limiter = rate_limiter
@@ -73,7 +75,7 @@ class SteamAppDetailResource:
                     app_detail.model_dump(mode="json")
                 )
             yield RawBatch(
-                source="steam",
+                source=self.source_name,
                 resource="app_details",
                 records=records,
                 extracted_at=datetime.now(UTC),

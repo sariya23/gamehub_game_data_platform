@@ -1,11 +1,16 @@
-import httpx
 import structlog
 
 from config import load_config
+from src.http.clients.steam import create_steam_api_http_client
 from src.infra.gateway.steam.constants import STEAM_API_BASE_URL, STEAM_STORE_BASE_URL
-from src.infra.gateway.steam.steam import SteamApi
+from src.infra.gateway.steam.create import create_steam_api_client
 from src.infra.s3.minio.create import create_minio
-from src.resources.steam.steam import SteamAppListResource
+from src.lib.rate_limit.create import create_rate_limiter
+from src.lib.rate_limit.rate_limit import RateLimitConfig
+from src.resources.steam.create import (
+    create_steam_app_detail_resource,
+    create_steam_app_list_resource,
+)
 
 log = structlog.get_logger()
 config = load_config(".env.local")
@@ -13,9 +18,11 @@ log.info(f"start in '{config.env.type}' env")
 
 m = create_minio(config=config.s3)
 
-client = httpx.Client(timeout=config.steam.http.steam_api_response_timeout_seconds, headers={"x-webapi-key": config.steam.auth.steam_api_web_key.get_secret_value()})
-steam_api = SteamApi(client=client, base_store_url=STEAM_STORE_BASE_URL, base_url_api=STEAM_API_BASE_URL)
-steam_resource = SteamAppListResource(steam_api)
-for i in steam_resource.iter_game_baches(10, 1):
+client = create_steam_api_http_client(config.steam)
+steam_api = create_steam_api_client(client, STEAM_STORE_BASE_URL, STEAM_API_BASE_URL)
+steam_list_resource = create_steam_app_list_resource(steam_api)
+rate_limiter = create_rate_limiter(RateLimitConfig(1, 1))
+steam_app_details_resource = create_steam_app_detail_resource(steam_api, rate_limiter)
+for i in steam_list_resource.iter_game_baches(10, 1):
     print(i)
     
