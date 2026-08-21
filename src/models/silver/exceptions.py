@@ -1,0 +1,2 @@
+class SilverNameRequired(Exception):
+    pass

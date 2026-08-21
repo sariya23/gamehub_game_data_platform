@@ -7,7 +7,7 @@ from src.infra.gateway.steam.steam import (
     IStoreServiceGetAppListV1RequestDTO,
     StoreApiAppDetailsRequestDTO,
 )
-from src.models.models import RawBatch
+from src.models.raw.models import RawBatch
 from src.resources.steam.interface import ISteamAppDetail, ISteamList
 
 log = structlog.get_logger()
