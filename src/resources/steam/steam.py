@@ -1,18 +1,18 @@
 from collections.abc import Iterator
+from contextlib import AbstractContextManager
 from datetime import UTC, datetime
 
 from src.infra.gateway.steam.steam import (
     IStoreServiceGetAppListV1RequestDTO,
-    SteamApi,
     StoreApiAppDetailsRequestDTO,
 )
-from src.lib.rate_limit.rate_limit import RateLimiter
 from src.models.models import RawBatch
+from src.resources.steam.interface import ISteamAppDetail, ISteamList
 
 
 class SteamAppListResource:
     source_name = "steam"
-    def __init__(self, steam_api: SteamApi):
+    def __init__(self, steam_api: ISteamList):
         self.__steam_api = steam_api
         
     def iter_game_baches(self, limit: int, batch_size: int) -> Iterator[RawBatch]:
@@ -53,7 +53,7 @@ class SteamAppListResource:
 
     
 class SteamAppDetailResource:
-    def __init__(self, steam_api: SteamApi, rate_limiter: RateLimiter):
+    def __init__(self, steam_api: ISteamAppDetail, rate_limiter: AbstractContextManager):
         self.__steam_api = steam_api
         self.__rate_limiter = rate_limiter
     

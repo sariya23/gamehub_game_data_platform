@@ -11,3 +11,6 @@ class S3(ABC):
 class RawStorage:
     def __init__(self, s3: S3):
         self.__s3 = s3
+    
+    # @staticmethod
+    # def make_object_name(source: str)
