@@ -10,6 +10,7 @@ from src.infra.gateway.steam.create import create_steam_api_client
 from src.infra.s3.minio.create import create_minio
 from src.lib.rate_limit.create import create_rate_limiter
 from src.lib.rate_limit.rate_limit import RateLimitConfig
+from src.models.models import RawBatch
 from src.resources.steam.create import (
     create_steam_app_detail_resource,
     create_steam_app_list_resource,
@@ -21,7 +22,9 @@ log.info(f"start in '{config.env.type}' env")
 
 m = create_minio(config=config.s3)
 steam_http_client = create_steam_api_http_client(config.steam)
-steam_api = create_steam_api_client(steam_http_client, STEAM_STORE_BASE_URL, STEAM_API_BASE_URL)
+steam_api = create_steam_api_client(
+    steam_http_client, STEAM_STORE_BASE_URL, STEAM_API_BASE_URL
+)
 steam_list_resource = create_steam_app_list_resource(steam_api)
 rate_limiter = create_rate_limiter(RateLimitConfig(1, 1))
 steam_app_details_resource = create_steam_app_detail_resource(steam_api, rate_limiter)
@@ -29,15 +32,46 @@ steam_app_details_resource = create_steam_app_detail_resource(steam_api, rate_li
 bucket_name = "raw"
 m.create_or_ignore_bucket(bucket_name)
 
-for batch_number, batch in enumerate(
-    steam_list_resource._debug_iter_game_baches(10000, 100), start=1
-):
-    jsonl = "".join(json.dumps(record, ensure_ascii=False) + "\n" for record in batch.records)
+
+def upload_batches(batches: list[RawBatch], object_group: str) -> None:
+    for batch_number, batch in enumerate(batches, start=1):
+        jsonl = "".join(
+            json.dumps(record, ensure_ascii=False) + "\n" for record in batch.records
+        )
+        data = jsonl.encode("utf-8")
+        object_key = m.build_object_key(
+            batch.source,
+            object_group=object_group,
+            load_date=batch.extracted_at,
+            filename=f"batch_{batch_number:05d}.jsonl",
+        )
+        m.upload_file(BytesIO(data), object_key, len(data), bucket_name)
+
+
+app_batches = steam_list_resource._debug_get_game_batches(10, 1)
+for batch_number, batch in enumerate(app_batches, start=1):
+    jsonl = "".join(
+        json.dumps(record, ensure_ascii=False) + "\n" for record in batch.records
+    )
     data = jsonl.encode("utf-8")
     object_key = m.build_object_key(
         batch.source,
         object_group="app",
         load_date=batch.extracted_at,
-        filename=f"batch_{batch_number:05d}.jsonl",
+        filename=f"batch_app_{batch_number:05d}.jsonl",
+    )
+    m.upload_file(BytesIO(data), object_key, len(data), bucket_name)
+
+app_detail_batches = steam_app_details_resource.get_app_details(app_batches)
+for batch_number, batch in enumerate(app_batches, start=1):
+    jsonl = "".join(
+        json.dumps(record, ensure_ascii=False) + "\n" for record in batch.records
+    )
+    data = jsonl.encode("utf-8")
+    object_key = m.build_object_key(
+        batch.source,
+        object_group="app_detail",
+        load_date=batch.extracted_at,
+        filename=f"batch_app_details{batch_number:05d}.jsonl",
     )
     m.upload_file(BytesIO(data), object_key, len(data), bucket_name)
