@@ -19,18 +19,17 @@ class SteamAppListResource:
     def __init__(self, steam_api: ISteamList):
         self.__steam_api = steam_api
 
-    def get_game_batches(self, batch_size: int) -> list[RawBatch]:
-        last_appid = None
+    def get_game_batches(
+        self, request: IStoreServiceGetAppListV1RequestDTO
+    ) -> list[RawBatch]:
+        last_appid = request.last_appid
         total = 0
         have_more_results = True
         batches = []
 
         while have_more_results:
             response = self.__steam_api.istore_service_get_app_list_v1(
-                IStoreServiceGetAppListV1RequestDTO(
-                    last_appid=last_appid,
-                    max_results=batch_size,
-                )
+                request.model_copy(update={"last_appid": last_appid})
             )
 
             apps = response.response.apps
@@ -55,18 +54,22 @@ class SteamAppListResource:
 
         return batches
 
-    def _debug_get_game_batches(self, limit: int, batch_size: int) -> list[RawBatch]:
-        last_appid = None
+    def _debug_get_game_batches(
+        self, limit: int, request: IStoreServiceGetAppListV1RequestDTO
+    ) -> list[RawBatch]:
+        last_appid = request.last_appid
         total = 0
         batches = []
 
         while total < limit:
-            current_batch_size = min(batch_size, limit - total)
+            current_batch_size = min(request.max_results, limit - total)
 
             response = self.__steam_api.istore_service_get_app_list_v1(
-                IStoreServiceGetAppListV1RequestDTO(
-                    last_appid=last_appid,
-                    max_results=current_batch_size,
+                request.model_copy(
+                    update={
+                        "last_appid": last_appid,
+                        "max_results": current_batch_size,
+                    }
                 )
             )
 

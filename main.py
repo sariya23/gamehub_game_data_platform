@@ -12,6 +12,9 @@ from src.models.silver.exceptions import SilverRequiredFiledException
 from src.http.clients.steam import create_steam_api_http_client
 from src.infra.gateway.steam.constants import STEAM_API_BASE_URL, STEAM_STORE_BASE_URL
 from src.infra.gateway.steam.create import create_steam_api_client
+from src.infra.gateway.steam.models.api.i_store_service.get_app_list.v1.istore_service_get_app_list_v1 import (
+    IStoreServiceGetAppListV1RequestDTO,
+)
 from src.infra.s3.minio.create import create_minio
 from src.lib.rate_limit.create import create_rate_limiter
 from src.lib.rate_limit.rate_limit import RateLimitConfig
@@ -41,7 +44,17 @@ bucket_name = "gamehub"
 m.create_or_ignore_bucket(bucket_name)
 
 
-app_batches = steam_list_resource._debug_get_game_batches(20, 2)
+app_batches = steam_list_resource._debug_get_game_batches(
+    limit=20,
+    request=IStoreServiceGetAppListV1RequestDTO(
+        max_results=2,
+        include_dlc=True,
+        include_games=True,
+        include_hardware=True,
+        include_software=True,
+        include_videos=True,
+    ),
+)
 for batch_number, batch in enumerate(app_batches, start=1):
     jsonl = "".join(
         json.dumps(record, ensure_ascii=False) + "\n" for record in batch.records
