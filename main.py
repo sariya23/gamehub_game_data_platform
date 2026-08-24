@@ -66,9 +66,17 @@ for batch_number, batch in enumerate(app_detail_batches, start=1):
 
 for app_detail_raw in m.get_files("gamehub", "raw/steam/app_detail/2026/8/21/"):
     raw_model = RawSteamApp.model_validate_json(app_detail_raw)
-    try:
-        silver_model = SilverSteamApp.from_raw(raw_model)
-    except SilverRequiredFiledException as e:
-        log.warning(f"cannot transform silver model from raw. Exception: {e}, app id: {raw_model.steam_appid}")
-        continue
+    for appid, response in raw_model.root.items():
+        if response.success is not True:
+            continue
+
+        if response.data is None:
+            continue
+
+        raw_app = response.data
+        try:
+            silver_model = SilverSteamApp.from_raw(raw_app)
+        except SilverRequiredFiledException as e:
+            log.warning(f"cannot transform silver model from raw. Exception: {e}, app id: {raw_app.steam_appid}")
+            continue
         
