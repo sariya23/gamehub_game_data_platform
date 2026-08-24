@@ -1,6 +1,8 @@
 from collections.abc import Iterator
 from datetime import date
 from io import BytesIO
+from pathlib import Path
+from time import time
 
 import structlog
 from minio import Minio as MinioClient
@@ -50,4 +52,10 @@ class Minio:
     def build_object_key(
         prefix: str, source_name: str, object_group: str, load_date: date, filename: str
     ) -> str:
-        return f"raw/{source_name}/{object_group}/{load_date.year}/{load_date.month}/{load_date.day}/{filename}"
+        file_path = Path(filename)
+        timestamped_filename = f"{file_path.stem}_{int(time())}{file_path.suffix}"
+        return (
+            f"{prefix}/{source_name}/{object_group}/"
+            f"{load_date.year}/{load_date.month}/{load_date.day}/"
+            f"{timestamped_filename}"
+        )
