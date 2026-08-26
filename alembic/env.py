@@ -35,7 +35,6 @@ def configure_database_url() -> None:
 
     load_dotenv(env_path, override=True)
 
-
     database_url = URL.create(
         drivername=os.getenv("DATABASE__DRIVER", "postgresql+psycopg"),
         username=get_required_env("DATABASE__USER", env_path),
@@ -44,7 +43,7 @@ def configure_database_url() -> None:
         port=int(get_required_env("DATABASE__PORT", env_path)),
         database=get_required_env("DATABASE__NAME", env_path),
         query={
-            "sslmode": get_required_env("DATABASE__SSL_MODE", env_path),
+            "sslmode": os.getenv("DATABASE__SSL_MODE", "disable"),
         },
     ).render_as_string(hide_password=False)
 

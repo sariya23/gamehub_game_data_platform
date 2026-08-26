@@ -1,7 +1,7 @@
 .PHONY: lint up down migrate_up
 
-COMPOSE = docker-compose -f deploy/local/docker-compose.yaml --env-file ./.env.local
 ENV_FILE ?= .env.local
+COMPOSE = docker-compose -f deploy/local/docker-compose.yaml --env-file "$(ENV_FILE)"
 
 lint:
 	uv run ruff check . --fix
