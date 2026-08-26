@@ -52,10 +52,8 @@ class Minio:
     def build_object_key(
         prefix: str, source_name: str, object_group: str, load_date: date, filename: str
     ) -> str:
-        file_path = Path(filename)
-        timestamped_filename = f"{file_path.stem}_{int(time())}{file_path.suffix}"
         return (
             f"{prefix}/{source_name}/{object_group}/"
             f"{load_date.year}/{load_date.month}/{load_date.day}/"
-            f"{timestamped_filename}"
+            f"{filename}"
         )
