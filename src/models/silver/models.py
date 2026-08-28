@@ -15,6 +15,7 @@ from src.models.silver.exceptions import (
     SilverNameRequired,
     SilverReleaseDateRequired,
     SilverSteamAppIdRequired,
+    SilverTypeRequired,
 )
 
 
@@ -65,6 +66,7 @@ class SilverScreenshot(BaseModel):
 class SilverSteamApp(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
+    type: str
     name: str
     steam_appid: int
 
@@ -85,6 +87,8 @@ class SilverSteamApp(BaseModel):
 
     @classmethod
     def from_raw(cls, raw: RawSteamApp):
+        if not raw.type:
+            raise SilverTypeRequired("'type' is required")
         if not raw.name:
             raise SilverNameRequired("'name' is required")
         if not raw.steam_appid:
@@ -104,6 +108,7 @@ class SilverSteamApp(BaseModel):
             raise SilverReleaseDateRequired("'release_date' is required")
 
         return cls(
+            type=raw.type,
             name=raw.name,
             steam_appid=raw.steam_appid,
             detailed_description=raw.detailed_description,

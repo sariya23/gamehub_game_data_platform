@@ -10,11 +10,14 @@ class SteamRateLimiterConfig(BaseModel):
     requests: int
     period_seconds: Seconds
 
+
 class SteamAuthKeyConfig(BaseModel):
     steam_api_web_key: SecretStr
 
+
 class SteamHTTPConfig(BaseModel):
     steam_api_response_timeout_seconds: Seconds
+
 
 class SteamConfig(BaseModel):
     rate_limiter: SteamRateLimiterConfig
@@ -30,13 +33,26 @@ class S3Config(BaseModel):
     host: str
     secure: bool
 
+
+class DatabaseConfig(BaseModel):
+    driver: str
+    host: str
+    port: int
+    user: str
+    password: SecretStr
+    name: str
+    ssl_mode: str
+
+
 class EnvConfig(BaseModel):
     type: str
 
+
 class Config(BaseSettings):
     steam: SteamConfig
-    s3: S3Config   
-    env: EnvConfig  
+    s3: S3Config
+    database: DatabaseConfig
+    env: EnvConfig
 
     model_config = SettingsConfigDict(
         env_file=".env",

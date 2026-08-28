@@ -149,25 +149,29 @@ raw_app_detail_prefix = (
     f"{pipeline_date.year}/{pipeline_date.month}/{pipeline_date.day}/"
 )
 for app_detail_raw in m.get_files(bucket_name, raw_app_detail_prefix):
-    raw_model = RawSteamAppLine.model_validate_json(app_detail_raw)
-    for response in raw_model.root.values():
-        if response.success is not True:
+    for app_detail_line in app_detail_raw.splitlines():
+        if not app_detail_line.strip():
             continue
 
-        if response.data is None:
-            continue
+        raw_model = RawSteamAppLine.model_validate_json(app_detail_line)
+        for response in raw_model.root.values():
+            if response.success is not True:
+                continue
 
-        raw_app = response.data
-        silver_model = None
-        try:
-            silver_model = SilverSteamApp.from_raw(raw_app)
-        except SilverRequiredFiledException as e:
-            log.warning(
-                f"cannot transform silver model from raw. Exception: {e}, app id: {raw_app.steam_appid}"
-            )
-            continue
+            if response.data is None:
+                continue
 
-        batch.append(silver_model)
+            raw_app = response.data
+            silver_model = None
+            try:
+                silver_model = SilverSteamApp.from_raw(raw_app)
+            except SilverRequiredFiledException as e:
+                log.warning(
+                    f"cannot transform silver model from raw. Exception: {e}, app id: {raw_app.steam_appid}"
+                )
+                continue
+
+            batch.append(silver_model)
 
 table = pa.Table.from_pylist(
     [app.model_dump(mode="python") for app in batch],

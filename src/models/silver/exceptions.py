@@ -10,5 +10,9 @@ class SilverSteamAppIdRequired(SilverRequiredFiledException):
     pass
 
 
+class SilverTypeRequired(SilverRequiredFiledException):
+    pass
+
+
 class SilverReleaseDateRequired(SilverRequiredFiledException):
     pass
