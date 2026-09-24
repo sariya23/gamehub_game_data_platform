@@ -1,7 +1,6 @@
 import re
 from datetime import date, datetime
 
-
 RU_MONTHS = {
     "янв": 1,
     "января": 1,

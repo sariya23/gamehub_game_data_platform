@@ -1,8 +1,6 @@
 from collections.abc import Iterator
 from datetime import date
 from io import BytesIO
-from pathlib import Path
-from time import time
 
 import structlog
 from minio import Minio as MinioClient
@@ -42,7 +40,7 @@ class Minio:
             response = self.__client.get_object(bucket_name, object_info.object_name)
             try:
                 yield response.read()
-            except Exception as e:
+            except Exception:
                 log.error("cannot read from bucket with error '{e}'")
             finally:
                 response.close()

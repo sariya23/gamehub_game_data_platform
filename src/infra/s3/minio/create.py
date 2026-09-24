@@ -2,9 +2,9 @@ import sys
 
 import structlog
 from minio import Minio as MinioClient
-from src.infra.s3.minio.minio import Minio
 
 from config import S3Config
+from src.infra.s3.minio.minio import Minio
 
 log = structlog.get_logger()
 
