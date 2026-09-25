@@ -1,4 +1,5 @@
 import httpx
+import structlog
 
 from src.infra.gateway.steam.constants import (
     APP_DETAILS_URL,
@@ -15,6 +16,8 @@ from src.infra.gateway.steam.models.store.api.app_details.store_api_app_details 
     StoreApiAppDetailsRequestDTO,
 )
 
+log = structlog.get_logger(__name__)
+
 
 class SteamApi:
     def __init__(self, client: httpx.Client, base_url_api: str, base_store_url: str) -> None:
@@ -28,20 +31,36 @@ class SteamApi:
     ) -> IStoreServiceGetAppListV1ResponseDTO:
         base_url = httpx.URL(self.__base_api_url)
         url_path = f"/{STEAM_API_INTERFACE_STORE_SERVICE}/{STEAM_API_METHOD_GET_APP_LIST}/{STEAM_API_VERSION_V1}/"
-        response = self.__client.get(
-        url=base_url.join(url_path),
-        params=request.model_dump(exclude_none=True))
-        
-        
-        response.raise_for_status()
-        return IStoreServiceGetAppListV1ResponseDTO.model_validate(response.json())
+        response = None
+        try:
+            response = self.__client.get(
+            url=base_url.join(url_path),
+            params=request.model_dump(exclude_none=True))
+
+
+            response.raise_for_status()
+            return IStoreServiceGetAppListV1ResponseDTO.model_validate(response.json())
+        except Exception:
+            log.exception(
+                "steam.request_failed", operation="get_app_list", last_appid=request.last_appid,
+                status_code=response.status_code if response is not None else None,
+            )
+            raise
     
     def store_api_app_details(self, request: StoreApiAppDetailsRequestDTO) -> AppDetailsResponseDTO:
         base_url = httpx.URL(self.__base_store_url)
-        response = self.__client.get(
-        url=base_url.join(APP_DETAILS_URL),
-        params=request.model_dump(exclude_none=True))
-        
-        response.raise_for_status()
-        return AppDetailsResponseDTO.model_validate(response.json())
+        response = None
+        try:
+            response = self.__client.get(
+            url=base_url.join(APP_DETAILS_URL),
+            params=request.model_dump(exclude_none=True))
+
+            response.raise_for_status()
+            return AppDetailsResponseDTO.model_validate(response.json())
+        except Exception:
+            log.exception(
+                "steam.request_failed", operation="get_app_details", app_id=request.appids,
+                status_code=response.status_code if response is not None else None,
+            )
+            raise
             

@@ -116,8 +116,8 @@ class RawRating(RawBaseModel):
 
 class RawSteamApp(RawBaseModel):
     type: str | None = None
-    name: str | None = None
-    steam_appid: int | None = None
+    name: str
+    steam_appid: int
     required_age: int | None = None
     is_free: bool | None = None
 

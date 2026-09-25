@@ -6,7 +6,7 @@ import structlog
 from minio import Minio as MinioClient
 from minio.error import S3Error
 
-log = structlog.get_logger()
+log = structlog.get_logger(__name__)
 
 
 class Minio:
@@ -17,18 +17,18 @@ class Minio:
         found = self.__client.bucket_exists(bucket_name)
         if not found:
             self.__client.make_bucket(bucket_name)
-            log.info(f"bucket {bucket_name} created")
+            log.info("s3.bucket_created", bucket=bucket_name)
         else:
-            log.info(f"bucket {bucket_name} already exists")
+            log.info("s3.bucket_exists", bucket=bucket_name)
 
     def upload_file(self, data: BytesIO, object_name: str, l: int, bucket_name: str):
         try:
             self.__client.put_object(
                 bucket_name=bucket_name, object_name=object_name, data=data, length=l
             )
-            log.info(f"object with name '{object_name}' saved in s3")
+            log.info("s3.object_uploaded", bucket=bucket_name, object_key=object_name, size_bytes=l)
         except S3Error as error:
-            log.error("cannot save object in s3", error=str(error))
+            log.exception("s3.upload_failed", operation="put_object", bucket=bucket_name, object_key=object_name, size_bytes=l, error_type=type(error).__name__)
 
     def get_files(self, bucket_name: str, file_group: str) -> Iterator[bytes]:
         for object_info in self.__client.list_objects(
@@ -41,7 +41,7 @@ class Minio:
             try:
                 yield response.read()
             except Exception:
-                log.error("cannot read from bucket with error '{e}'")
+                log.exception("s3.read_failed", operation="read_object", bucket=bucket_name, prefix=file_group, object_key=object_info.object_name)
             finally:
                 response.close()
                 response.release_conn()

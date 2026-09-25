@@ -10,7 +10,7 @@ from src.infra.gateway.steam.steam import (
 from src.models.raw.models import RawBatch
 from src.resources.steam.interface import ISteamAppDetail, ISteamList
 
-log = structlog.get_logger()
+log = structlog.get_logger(__name__)
 
 
 class SteamAppListResource:
@@ -47,7 +47,12 @@ class SteamAppListResource:
             )
 
             total += len(apps)
-            log.debug(f"get {total} games")
+            log.debug(
+                "steam.app_list_batch_received",
+                total_games=total,
+                batch_size=len(apps),
+                last_appid=last_appid,
+            )
 
             last_appid = response.response.last_appid
             have_more_results = response.response.have_more_results

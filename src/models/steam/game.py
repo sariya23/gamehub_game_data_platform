@@ -4,17 +4,17 @@ from pydantic import BaseModel, Field
 
 
 class Genre(BaseModel):
-    steam_id: int
-    name: str
+    steam_id: int | None = None
+    name: str | None = None
 
 
 class Game(BaseModel):
     name: str
     steam_id: int
 
-    description: str
-    short_description: str
-    header_image_url: str
+    description: str | None = None
+    short_description: str | None = None
+    header_image_url: str | None = None
 
     developers: list[str] = Field(default_factory=list)
 
@@ -30,7 +30,7 @@ class Game(BaseModel):
 
     steam_url: str
 
-    available_on_windows: bool = False
-    available_on_mac: bool = False
-    available_on_linux: bool = False
+    available_on_windows: bool | None = False
+    available_on_mac: bool | None = False
+    available_on_linux: bool | None = False
     
