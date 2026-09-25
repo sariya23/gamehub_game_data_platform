@@ -19,7 +19,7 @@ class SteamAppListResource:
     def __init__(self, steam_api: ISteamList):
         self.__steam_api = steam_api
 
-    def get_game_batches(
+    def get_all_games_batches(
         self, request: IStoreServiceGetAppListV1RequestDTO
     ) -> list[RawBatch]:
         last_appid = request.last_appid

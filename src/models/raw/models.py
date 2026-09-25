@@ -164,12 +164,12 @@ class RawSteamApp(RawBaseModel):
 
     # Ключи динамические:
     # usk, deJus, steam_germany, igrs и т.д.
-    ratings: dict[str, RawRating] | None = None
+    ratings: dict[str, RawRating]
 
 
 class RawSteamAppResponse(RawBaseModel):
-    success: bool | None = None
-    data: RawSteamApp | None = None
+    success: bool
+    data: RawSteamApp
 
 
 class RawSteamAppLine(RootModel[dict[int, RawSteamAppResponse]]):

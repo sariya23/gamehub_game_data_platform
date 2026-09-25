@@ -34,6 +34,3 @@ class Game(BaseModel):
     available_on_mac: bool = False
     available_on_linux: bool = False
     
-    @classmethod
-    def from_dict(cls, data: dict):
-        pass
