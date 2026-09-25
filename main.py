@@ -4,6 +4,7 @@ from datetime import UTC, date, datetime
 import structlog
 
 from config import load_config
+from src.lib.input.input import get_pipeline_date
 from src.http.clients.steam import create_steam_api_http_client
 from src.infra.gateway.steam.constants import STEAM_API_BASE_URL, STEAM_STORE_BASE_URL
 from src.infra.gateway.steam.create import create_steam_api_client
@@ -20,43 +21,10 @@ from src.resources.steam.create import (
 )
 
 log = structlog.get_logger(__name__)
-
-    
-
-def parse_pipeline_date(value: str) -> date:
-    try:
-        parsed_date = date.fromisoformat(value.replace("/", "-"))
-    except ValueError as error:
-        raise argparse.ArgumentTypeError(
-            "date must be in YYYY/MM/DD format, for example 2026/08/27"
-        ) from error
-
-    if value != parsed_date.strftime("%Y/%m/%d"):
-        raise argparse.ArgumentTypeError(
-            "date must be in YYYY/MM/DD format, for example 2026/08/27"
-        )
-
-    return parsed_date
-
-
-def get_pipeline_date() -> date:
-    parser = argparse.ArgumentParser(
-        description="Run the Steam data pipeline for an S3 partition date",
-    )
-    parser.add_argument(
-        "--pipe_date",
-        type=parse_pipeline_date,
-        default=datetime.now(UTC).date(),
-        metavar="YYYY/MM/DD",
-        help="S3 partition date; defaults to the current UTC date",
-    )
-    return parser.parse_args().pipe_date
-
+configure_logging()
 
 pipeline_date = get_pipeline_date()
 
-
-configure_logging()
 config = load_config(".env.local")
 register_secrets(
     config.steam.auth.steam_api_web_key.get_secret_value(),
