@@ -1,0 +1,1 @@
+insert into nsi_game_source (name) values ('steam');
