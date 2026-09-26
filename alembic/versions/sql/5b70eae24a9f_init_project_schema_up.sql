@@ -241,10 +241,7 @@ CREATE TABLE nsi_game_rating_source (
     max_value  NUMERIC NOT NULL,
 
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMP,
-
-    CONSTRAINT ck_nsi_game_rating_source_range
-        CHECK (min_value < max_value)
+    deleted_at TIMESTAMP
 );
 
 CREATE UNIQUE INDEX uq_nsi_game_rating_source_name_active
