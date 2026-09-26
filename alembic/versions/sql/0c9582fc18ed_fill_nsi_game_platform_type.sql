@@ -1,1 +1,1 @@
-insert into nsi_game_platform_type (name) values ('pc', 'console', 'mobile');
+insert into nsi_game_platform_type (name) values ('pc'), ('console'), ('mobile');

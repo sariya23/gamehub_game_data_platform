@@ -39,7 +39,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "pg_isready -U ${DATABASE__USER} -d ${POSTGRES_DB} -p ${POSTGRES_PORT}",
+          "pg_isready -U ${DATABASE__USER} -d ${DATABASE__NAME} -p ${DATABASE__PORT}",
         ]
       interval: 10s
       timeout: 5s

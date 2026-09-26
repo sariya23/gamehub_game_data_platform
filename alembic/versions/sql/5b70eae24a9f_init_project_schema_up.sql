@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 -- GAME
 -- ============================================================
 
-CREATE TABLE game (
+CREATE TABLE IF NOT EXISTS game (
     id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name              TEXT NOT NULL,
     full_description  TEXT,
@@ -22,7 +22,7 @@ CREATE TABLE game (
 -- GENRE
 -- ============================================================
 
-CREATE TABLE nsi_game_genre (
+CREATE TABLE IF NOT EXISTS nsi_game_genre (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name       TEXT NOT NULL,
 
@@ -30,12 +30,12 @@ CREATE TABLE nsi_game_genre (
     deleted_at TIMESTAMP
 );
 
-CREATE UNIQUE INDEX uq_nsi_game_genre_name_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_nsi_game_genre_name_active
     ON nsi_game_genre (name)
     WHERE deleted_at IS NULL;
 
 
-CREATE TABLE bridge_game_genre (
+CREATE TABLE IF NOT EXISTS bridge_game_genre (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     genre_id   BIGINT NOT NULL,
     game_id    UUID NOT NULL,
@@ -54,14 +54,14 @@ CREATE TABLE bridge_game_genre (
         ON DELETE RESTRICT
 );
 
-CREATE UNIQUE INDEX uq_bridge_game_genre_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_bridge_game_genre_active
     ON bridge_game_genre (game_id, genre_id)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX ix_bridge_game_genre_game_id
+CREATE INDEX IF NOT EXISTS ix_bridge_game_genre_game_id
     ON bridge_game_genre (game_id);
 
-CREATE INDEX ix_bridge_game_genre_genre_id
+CREATE INDEX IF NOT EXISTS ix_bridge_game_genre_genre_id
     ON bridge_game_genre (genre_id);
 
 
@@ -69,7 +69,7 @@ CREATE INDEX ix_bridge_game_genre_genre_id
 -- PLATFORM TYPE
 -- ============================================================
 
-CREATE TABLE nsi_game_platform_type (
+CREATE TABLE IF NOT EXISTS nsi_game_platform_type (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name       TEXT NOT NULL,
 
@@ -77,7 +77,7 @@ CREATE TABLE nsi_game_platform_type (
     deleted_at TIMESTAMP
 );
 
-CREATE UNIQUE INDEX uq_nsi_game_platform_type_name_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_nsi_game_platform_type_name_active
     ON nsi_game_platform_type (name)
     WHERE deleted_at IS NULL;
 
@@ -86,7 +86,7 @@ CREATE UNIQUE INDEX uq_nsi_game_platform_type_name_active
 -- PLATFORM
 -- ============================================================
 
-CREATE TABLE nsi_game_platform (
+CREATE TABLE IF NOT EXISTS nsi_game_platform (
     id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name             TEXT NOT NULL,
     platform_type_id BIGINT NOT NULL,
@@ -100,15 +100,15 @@ CREATE TABLE nsi_game_platform (
         ON DELETE RESTRICT
 );
 
-CREATE UNIQUE INDEX uq_nsi_game_platform_name_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_nsi_game_platform_name_active
     ON nsi_game_platform (name)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX ix_nsi_game_platform_platform_type_id
+CREATE INDEX IF NOT EXISTS ix_nsi_game_platform_platform_type_id
     ON nsi_game_platform (platform_type_id);
 
 
-CREATE TABLE bridge_game_platform (
+CREATE TABLE IF NOT EXISTS bridge_game_platform (
     id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     platform_id BIGINT NOT NULL,
     game_id     UUID NOT NULL,
@@ -127,14 +127,14 @@ CREATE TABLE bridge_game_platform (
         ON DELETE RESTRICT
 );
 
-CREATE UNIQUE INDEX uq_bridge_game_platform_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_bridge_game_platform_active
     ON bridge_game_platform (game_id, platform_id)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX ix_bridge_game_platform_game_id
+CREATE INDEX IF NOT EXISTS ix_bridge_game_platform_game_id
     ON bridge_game_platform (game_id);
 
-CREATE INDEX ix_bridge_game_platform_platform_id
+CREATE INDEX IF NOT EXISTS ix_bridge_game_platform_platform_id
     ON bridge_game_platform (platform_id);
 
 
@@ -142,7 +142,7 @@ CREATE INDEX ix_bridge_game_platform_platform_id
 -- RELEASE DATE
 -- ============================================================
 
-CREATE TABLE game_release_date (
+CREATE TABLE IF NOT EXISTS game_release_date (
     id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     game_id      UUID NOT NULL,
     platform_id  BIGINT NOT NULL,
@@ -163,14 +163,14 @@ CREATE TABLE game_release_date (
         ON DELETE RESTRICT
 );
 
-CREATE UNIQUE INDEX uq_game_release_date_game_platform_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_game_release_date_game_platform_active
     ON game_release_date (game_id, platform_id)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX ix_game_release_date_game_id
+CREATE INDEX IF NOT EXISTS ix_game_release_date_game_id
     ON game_release_date (game_id);
 
-CREATE INDEX ix_game_release_date_platform_id
+CREATE INDEX IF NOT EXISTS ix_game_release_date_platform_id
     ON game_release_date (platform_id);
 
 
@@ -179,7 +179,7 @@ CREATE INDEX ix_game_release_date_platform_id
 -- Steam / Epic / GOG / etc.
 -- ============================================================
 
-CREATE TABLE nsi_game_source (
+CREATE TABLE IF NOT EXISTS nsi_game_source (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name       TEXT NOT NULL,
 
@@ -187,7 +187,7 @@ CREATE TABLE nsi_game_source (
     deleted_at TIMESTAMP
 );
 
-CREATE UNIQUE INDEX uq_nsi_game_source_name_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_nsi_game_source_name_active
     ON nsi_game_source (name)
     WHERE deleted_at IS NULL;
 
@@ -196,7 +196,7 @@ CREATE UNIQUE INDEX uq_nsi_game_source_name_active
 -- GAME <-> SOURCE
 -- ============================================================
 
-CREATE TABLE game_source (
+CREATE TABLE IF NOT EXISTS game_source (
     id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     game_id     UUID NOT NULL,
     source_id   BIGINT NOT NULL,
@@ -218,14 +218,14 @@ CREATE TABLE game_source (
 );
 
 -- Один внешний ID одного источника относится только к одной игре.
-CREATE UNIQUE INDEX uq_game_source_external_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_game_source_external_active
     ON game_source (source_id, external_id)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX ix_game_source_game_id
+CREATE INDEX IF NOT EXISTS ix_game_source_game_id
     ON game_source (game_id);
 
-CREATE INDEX ix_game_source_source_id
+CREATE INDEX IF NOT EXISTS ix_game_source_source_id
     ON game_source (source_id);
 
 
@@ -234,7 +234,7 @@ CREATE INDEX ix_game_source_source_id
 -- Metacritic / OpenCritic / etc.
 -- ============================================================
 
-CREATE TABLE nsi_game_rating_source (
+CREATE TABLE IF NOT EXISTS nsi_game_rating_source (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name       TEXT NOT NULL,
     min_value  NUMERIC NOT NULL,
@@ -244,7 +244,7 @@ CREATE TABLE nsi_game_rating_source (
     deleted_at TIMESTAMP
 );
 
-CREATE UNIQUE INDEX uq_nsi_game_rating_source_name_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_nsi_game_rating_source_name_active
     ON nsi_game_rating_source (name)
     WHERE deleted_at IS NULL;
 
@@ -253,7 +253,7 @@ CREATE UNIQUE INDEX uq_nsi_game_rating_source_name_active
 -- GAME RATING
 -- ============================================================
 
-CREATE TABLE game_rating (
+CREATE TABLE IF NOT EXISTS game_rating (
     id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     game_id          UUID NOT NULL,
     rating_source_id BIGINT NOT NULL,
@@ -274,14 +274,14 @@ CREATE TABLE game_rating (
         ON DELETE RESTRICT
 );
 
-CREATE UNIQUE INDEX uq_game_rating_game_source_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_game_rating_game_source_active
     ON game_rating (game_id, rating_source_id)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX ix_game_rating_game_id
+CREATE INDEX IF NOT EXISTS ix_game_rating_game_id
     ON game_rating (game_id);
 
-CREATE INDEX ix_game_rating_rating_source_id
+CREATE INDEX IF NOT EXISTS ix_game_rating_rating_source_id
     ON game_rating (rating_source_id);
 
 
@@ -289,7 +289,7 @@ CREATE INDEX ix_game_rating_rating_source_id
 -- GAME IMAGE
 -- ============================================================
 
-CREATE TABLE game_image (
+CREATE TABLE IF NOT EXISTS game_image (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     game_id    UUID NOT NULL,
     url        TEXT NOT NULL,
@@ -304,11 +304,11 @@ CREATE TABLE game_image (
         ON DELETE RESTRICT
 );
 
-CREATE UNIQUE INDEX uq_game_image_game_url_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_game_image_game_url_active
     ON game_image (game_id, url)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX ix_game_image_game_id
+CREATE INDEX IF NOT EXISTS ix_game_image_game_id
     ON game_image (game_id);
 
 
@@ -316,7 +316,7 @@ CREATE INDEX ix_game_image_game_id
 -- DEVELOPER
 -- ============================================================
 
-CREATE TABLE game_developer (
+CREATE TABLE IF NOT EXISTS game_developer (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name       TEXT NOT NULL,
 
@@ -324,12 +324,12 @@ CREATE TABLE game_developer (
     deleted_at TIMESTAMP
 );
 
-CREATE UNIQUE INDEX uq_game_developer_name_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_game_developer_name_active
     ON game_developer (name)
     WHERE deleted_at IS NULL;
 
 
-CREATE TABLE bridge_game_developer (
+CREATE TABLE IF NOT EXISTS bridge_game_developer (
     id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     game_id      UUID NOT NULL,
     developer_id BIGINT NOT NULL,
@@ -348,14 +348,14 @@ CREATE TABLE bridge_game_developer (
         ON DELETE RESTRICT
 );
 
-CREATE UNIQUE INDEX uq_bridge_game_developer_active
+CREATE UNIQUE INDEX IF NOT EXISTS uq_bridge_game_developer_active
     ON bridge_game_developer (game_id, developer_id)
     WHERE deleted_at IS NULL;
 
-CREATE INDEX ix_bridge_game_developer_game_id
+CREATE INDEX IF NOT EXISTS ix_bridge_game_developer_game_id
     ON bridge_game_developer (game_id);
 
-CREATE INDEX ix_bridge_game_developer_developer_id
+CREATE INDEX IF NOT EXISTS ix_bridge_game_developer_developer_id
     ON bridge_game_developer (developer_id);
 
 
