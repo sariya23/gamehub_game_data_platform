@@ -1,107 +1,20 @@
 BEGIN;
 
--- ============================================================
--- DATE
--- ============================================================
-
-CREATE TABLE dim_date (
-    date_key        INTEGER PRIMARY KEY, -- YYYYMMDD
-    date            DATE NOT NULL UNIQUE,
-    day             SMALLINT NOT NULL,
-    month           SMALLINT NOT NULL,
-    month_name      VARCHAR(20) NOT NULL,
-    quarter         SMALLINT NOT NULL,
-    year            SMALLINT NOT NULL,
-    day_of_week     SMALLINT NOT NULL,
-
-    CONSTRAINT chk_dim_date_day
-        CHECK (day BETWEEN 1 AND 31),
-
-    CONSTRAINT chk_dim_date_month
-        CHECK (month BETWEEN 1 AND 12),
-
-    CONSTRAINT chk_dim_date_quarter
-        CHECK (quarter BETWEEN 1 AND 4),
-
-    CONSTRAINT chk_dim_date_day_of_week
-        CHECK (day_of_week BETWEEN 1 AND 7)
-);
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 
 -- ============================================================
 -- GAME
--- game_id генерируется приложением / ETL
 -- ============================================================
 
-CREATE TABLE dim_game (
-    game_id                 UUID PRIMARY KEY,
+CREATE TABLE game (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name              TEXT NOT NULL,
+    full_description  TEXT,
+    short_description TEXT,
 
-    name                    TEXT NOT NULL,
-    short_description       TEXT,
-    detailed_description    TEXT,
-
-    release_date_key        INTEGER,
-
-    CONSTRAINT fk_dim_game_release_date
-        FOREIGN KEY (release_date_key)
-        REFERENCES dim_date(date_key)
-);
-
-
--- ============================================================
--- SOURCE
--- Steam, PlayStation Store и т.д.
--- ============================================================
-
-CREATE TABLE dim_source (
-    source_id       SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name            VARCHAR(100) NOT NULL UNIQUE
-);
-
-
-CREATE TABLE game_source (
-    game_id         UUID NOT NULL,
-    source_id       SMALLINT NOT NULL,
-    external_id     VARCHAR(255) NOT NULL,
-
-    PRIMARY KEY (game_id, source_id),
-
-    CONSTRAINT uq_game_source_external_id
-        UNIQUE (source_id, external_id),
-
-    CONSTRAINT fk_game_source_game
-        FOREIGN KEY (game_id)
-        REFERENCES dim_game(game_id),
-
-    CONSTRAINT fk_game_source_source
-        FOREIGN KEY (source_id)
-        REFERENCES dim_source(source_id)
-);
-
-
--- ============================================================
--- DEVELOPER
--- ============================================================
-
-CREATE TABLE dim_developer (
-    developer_id    BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name            TEXT NOT NULL UNIQUE
-);
-
-
-CREATE TABLE bridge_game_developer (
-    game_id         UUID NOT NULL,
-    developer_id    BIGINT NOT NULL,
-
-    PRIMARY KEY (game_id, developer_id),
-
-    CONSTRAINT fk_bridge_game_developer_game
-        FOREIGN KEY (game_id)
-        REFERENCES dim_game(game_id),
-
-    CONSTRAINT fk_bridge_game_developer_developer
-        FOREIGN KEY (developer_id)
-        REFERENCES dim_developer(developer_id)
+    updated_at        TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    deleted_at        TIMESTAMP
 );
 
 
@@ -109,199 +22,344 @@ CREATE TABLE bridge_game_developer (
 -- GENRE
 -- ============================================================
 
-CREATE TABLE dim_genre (
-    genre_id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name            VARCHAR(255) NOT NULL UNIQUE
+CREATE TABLE nsi_game_genre (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name       TEXT NOT NULL,
+
+    updated_at TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    deleted_at TIMESTAMP
 );
+
+CREATE UNIQUE INDEX uq_nsi_game_genre_name_active
+    ON nsi_game_genre (name)
+    WHERE deleted_at IS NULL;
 
 
 CREATE TABLE bridge_game_genre (
-    game_id         UUID NOT NULL,
-    genre_id        BIGINT NOT NULL,
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    genre_id   BIGINT NOT NULL,
+    game_id    UUID NOT NULL,
 
-    PRIMARY KEY (game_id, genre_id),
+    updated_at TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    deleted_at TIMESTAMP,
 
     CONSTRAINT fk_bridge_game_genre_game
         FOREIGN KEY (game_id)
-        REFERENCES dim_game(game_id),
+        REFERENCES game (id)
+        ON DELETE RESTRICT,
 
     CONSTRAINT fk_bridge_game_genre_genre
         FOREIGN KEY (genre_id)
-        REFERENCES dim_genre(genre_id)
+        REFERENCES nsi_game_genre (id)
+        ON DELETE RESTRICT
 );
+
+CREATE UNIQUE INDEX uq_bridge_game_genre_active
+    ON bridge_game_genre (game_id, genre_id)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX ix_bridge_game_genre_game_id
+    ON bridge_game_genre (game_id);
+
+CREATE INDEX ix_bridge_game_genre_genre_id
+    ON bridge_game_genre (genre_id);
 
 
 -- ============================================================
--- CATEGORY
--- Single-player, Steam Achievements, Steam Cloud и т.д.
+-- PLATFORM TYPE
 -- ============================================================
 
-CREATE TABLE dim_category (
-    category_id     BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name            VARCHAR(255) NOT NULL UNIQUE
+CREATE TABLE nsi_game_platform_type (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name       TEXT NOT NULL,
+
+    updated_at TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    deleted_at TIMESTAMP
 );
 
-
-CREATE TABLE bridge_game_category (
-    game_id         UUID NOT NULL,
-    category_id     BIGINT NOT NULL,
-
-    PRIMARY KEY (game_id, category_id),
-
-    CONSTRAINT fk_bridge_game_category_game
-        FOREIGN KEY (game_id)
-        REFERENCES dim_game(game_id),
-
-    CONSTRAINT fk_bridge_game_category_category
-        FOREIGN KEY (category_id)
-        REFERENCES dim_category(category_id)
-);
+CREATE UNIQUE INDEX uq_nsi_game_platform_type_name_active
+    ON nsi_game_platform_type (name)
+    WHERE deleted_at IS NULL;
 
 
 -- ============================================================
 -- PLATFORM
--- Windows, macOS, Linux
 -- ============================================================
 
-CREATE TABLE dim_platform (
-    platform_id     SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name            VARCHAR(100) NOT NULL UNIQUE
+CREATE TABLE nsi_game_platform (
+    id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name             TEXT NOT NULL,
+    platform_type_id BIGINT NOT NULL,
+
+    updated_at       TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    deleted_at       TIMESTAMP,
+
+    CONSTRAINT fk_nsi_game_platform_platform_type
+        FOREIGN KEY (platform_type_id)
+        REFERENCES nsi_game_platform_type (id)
+        ON DELETE RESTRICT
 );
+
+CREATE UNIQUE INDEX uq_nsi_game_platform_name_active
+    ON nsi_game_platform (name)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX ix_nsi_game_platform_platform_type_id
+    ON nsi_game_platform (platform_type_id);
 
 
 CREATE TABLE bridge_game_platform (
-    game_id         UUID NOT NULL,
-    platform_id     SMALLINT NOT NULL,
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    platform_id BIGINT NOT NULL,
+    game_id     UUID NOT NULL,
 
-    PRIMARY KEY (game_id, platform_id),
+    updated_at  TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    deleted_at  TIMESTAMP,
 
     CONSTRAINT fk_bridge_game_platform_game
         FOREIGN KEY (game_id)
-        REFERENCES dim_game(game_id),
+        REFERENCES game (id)
+        ON DELETE RESTRICT,
 
     CONSTRAINT fk_bridge_game_platform_platform
         FOREIGN KEY (platform_id)
-        REFERENCES dim_platform(platform_id)
+        REFERENCES nsi_game_platform (id)
+        ON DELETE RESTRICT
 );
+
+CREATE UNIQUE INDEX uq_bridge_game_platform_active
+    ON bridge_game_platform (game_id, platform_id)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX ix_bridge_game_platform_game_id
+    ON bridge_game_platform (game_id);
+
+CREATE INDEX ix_bridge_game_platform_platform_id
+    ON bridge_game_platform (platform_id);
+
+
+-- ============================================================
+-- RELEASE DATE
+-- ============================================================
+
+CREATE TABLE game_release_date (
+    id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    game_id      UUID NOT NULL,
+    platform_id  BIGINT NOT NULL,
+    release_date DATE,
+    coming_soon  BOOLEAN NOT NULL DEFAULT FALSE,
+
+    updated_at   TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    deleted_at   TIMESTAMP,
+
+    CONSTRAINT fk_game_release_date_game
+        FOREIGN KEY (game_id)
+        REFERENCES game (id)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_game_release_date_platform
+        FOREIGN KEY (platform_id)
+        REFERENCES nsi_game_platform (id)
+        ON DELETE RESTRICT
+);
+
+CREATE UNIQUE INDEX uq_game_release_date_game_platform_active
+    ON game_release_date (game_id, platform_id)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX ix_game_release_date_game_id
+    ON game_release_date (game_id);
+
+CREATE INDEX ix_game_release_date_platform_id
+    ON game_release_date (platform_id);
+
+
+-- ============================================================
+-- GAME SOURCE TYPE
+-- Steam / Epic / GOG / etc.
+-- ============================================================
+
+CREATE TABLE nsi_game_source (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name       TEXT NOT NULL,
+
+    updated_at TIMESTAMP NOT NULL DEFAULT (NOW() AT TIME ZONE 'UTC'),
+    deleted_at TIMESTAMP
+);
+
+CREATE UNIQUE INDEX uq_nsi_game_source_name_active
+    ON nsi_game_source (name)
+    WHERE deleted_at IS NULL;
+
+
+-- ============================================================
+-- GAME <-> SOURCE
+-- ============================================================
+
+CREATE TABLE game_source (
+    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    game_id     UUID NOT NULL,
+    source_id   BIGINT NOT NULL,
+    external_id TEXT NOT NULL,
+    url         TEXT,
+
+    updated_at  TIMESTAMP NOT NULL
+        DEFAULT (NOW() AT TIME ZONE 'UTC'),
+
+    deleted_at  TIMESTAMP,
+
+    CONSTRAINT fk_game_source_game
+        FOREIGN KEY (game_id)
+        REFERENCES game(id),
+
+    CONSTRAINT fk_game_source_source
+        FOREIGN KEY (source_id)
+        REFERENCES nsi_game_source(id)
+);
+
+-- Один внешний ID одного источника относится только к одной игре.
+CREATE UNIQUE INDEX uq_game_source_external_active
+    ON game_source (source_id, external_id)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX ix_game_source_game_id
+    ON game_source (game_id);
+
+CREATE INDEX ix_game_source_source_id
+    ON game_source (source_id);
 
 
 -- ============================================================
 -- RATING SOURCE
--- Metacritic, OpenCritic и т.д.
+-- Metacritic / OpenCritic / etc.
 -- ============================================================
 
-CREATE TABLE dim_rating_source (
-    rating_source_id    SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name                VARCHAR(100) NOT NULL UNIQUE
+CREATE TABLE nsi_game_rating_source (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name       TEXT NOT NULL,
+    min_value  NUMERIC NOT NULL,
+    max_value  NUMERIC NOT NULL,
+
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMP,
+
+    CONSTRAINT ck_nsi_game_rating_source_range
+        CHECK (min_value < max_value)
 );
 
+CREATE UNIQUE INDEX uq_nsi_game_rating_source_name_active
+    ON nsi_game_rating_source (name)
+    WHERE deleted_at IS NULL;
+
 
 -- ============================================================
--- GAME RATING FACT
--- Оценка игры от конкретного источника на конкретную дату
+-- GAME RATING
 -- ============================================================
 
-CREATE TABLE fact_game_rating (
-    game_id             UUID NOT NULL,
-    rating_source_id    SMALLINT NOT NULL,
-    snapshot_date_key   INTEGER NOT NULL,
+CREATE TABLE game_rating (
+    id               BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    game_id          UUID NOT NULL,
+    rating_source_id BIGINT NOT NULL,
+    value            NUMERIC NOT NULL,
+    url              TEXT,
 
-    score               NUMERIC(5, 2),
-    url                 TEXT,
+    updated_at       TIMESTAMP NOT NULL DEFAULT NOW(),
+    deleted_at       TIMESTAMP,
 
-    PRIMARY KEY (
-        game_id,
-        rating_source_id,
-        snapshot_date_key
-    ),
-
-    CONSTRAINT fk_fact_game_rating_game
+    CONSTRAINT fk_game_rating_game
         FOREIGN KEY (game_id)
-        REFERENCES dim_game(game_id),
+        REFERENCES game (id)
+        ON DELETE RESTRICT,
 
-    CONSTRAINT fk_fact_game_rating_source
+    CONSTRAINT fk_game_rating_rating_source
         FOREIGN KEY (rating_source_id)
-        REFERENCES dim_rating_source(rating_source_id),
-
-    CONSTRAINT fk_fact_game_rating_date
-        FOREIGN KEY (snapshot_date_key)
-        REFERENCES dim_date(date_key)
+        REFERENCES nsi_game_rating_source (id)
+        ON DELETE RESTRICT
 );
 
+CREATE UNIQUE INDEX uq_game_rating_game_source_active
+    ON game_rating (game_id, rating_source_id)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX ix_game_rating_game_id
+    ON game_rating (game_id);
+
+CREATE INDEX ix_game_rating_rating_source_id
+    ON game_rating (rating_source_id);
+
 
 -- ============================================================
--- SCREENSHOTS
+-- GAME IMAGE
 -- ============================================================
 
-CREATE TABLE game_screenshot (
-    screenshot_id   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+CREATE TABLE game_image (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    game_id    UUID NOT NULL,
+    url        TEXT NOT NULL,
+    screenshot BOOLEAN NOT NULL DEFAULT TRUE,
 
-    game_id         UUID NOT NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMP,
 
-    thumbnail_url   TEXT,
-    full_url        TEXT NOT NULL,
-    position        SMALLINT,
-
-    CONSTRAINT fk_game_screenshot_game
+    CONSTRAINT fk_game_image_game
         FOREIGN KEY (game_id)
-        REFERENCES dim_game(game_id),
-
-    CONSTRAINT uq_game_screenshot_position
-        UNIQUE (game_id, position)
+        REFERENCES game (id)
+        ON DELETE RESTRICT
 );
 
+CREATE UNIQUE INDEX uq_game_image_game_url_active
+    ON game_image (game_id, url)
+    WHERE deleted_at IS NULL;
 
--- ============================================================
--- INDEXES
--- PostgreSQL создаёт индексы для PK и UNIQUE автоматически,
--- но не создаёт их автоматически для FK.
--- ============================================================
-
-CREATE INDEX idx_dim_game_release_date
-    ON dim_game(release_date_key);
-
-CREATE INDEX idx_game_source_source
-    ON game_source(source_id);
-
-CREATE INDEX idx_bridge_game_developer_developer
-    ON bridge_game_developer(developer_id);
-
-CREATE INDEX idx_bridge_game_genre_genre
-    ON bridge_game_genre(genre_id);
-
-CREATE INDEX idx_bridge_game_category_category
-    ON bridge_game_category(category_id);
-
-CREATE INDEX idx_bridge_game_platform_platform
-    ON bridge_game_platform(platform_id);
-
-CREATE INDEX idx_fact_game_rating_source
-    ON fact_game_rating(rating_source_id);
-
-CREATE INDEX idx_fact_game_rating_date
-    ON fact_game_rating(snapshot_date_key);
-
-CREATE INDEX idx_game_screenshot_game
-    ON game_screenshot(game_id);
+CREATE INDEX ix_game_image_game_id
+    ON game_image (game_id);
 
 
 -- ============================================================
--- INITIAL DICTIONARY DATA
+-- DEVELOPER
 -- ============================================================
 
-INSERT INTO dim_source (name)
-VALUES ('Steam');
+CREATE TABLE game_developer (
+    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name       TEXT NOT NULL,
+
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMP
+);
+
+CREATE UNIQUE INDEX uq_game_developer_name_active
+    ON game_developer (name)
+    WHERE deleted_at IS NULL;
 
 
-INSERT INTO dim_platform (name)
-VALUES
-    ('Windows'),
-    ('macOS'),
-    ('Linux');
+CREATE TABLE bridge_game_developer (
+    id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    game_id      UUID NOT NULL,
+    developer_id BIGINT NOT NULL,
 
+    updated_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+    deleted_at   TIMESTAMP,
 
-INSERT INTO dim_rating_source (name)
-VALUES ('Metacritic');
+    CONSTRAINT fk_bridge_game_developer_game
+        FOREIGN KEY (game_id)
+        REFERENCES game (id)
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_bridge_game_developer_developer
+        FOREIGN KEY (developer_id)
+        REFERENCES game_developer (id)
+        ON DELETE RESTRICT
+);
+
+CREATE UNIQUE INDEX uq_bridge_game_developer_active
+    ON bridge_game_developer (game_id, developer_id)
+    WHERE deleted_at IS NULL;
+
+CREATE INDEX ix_bridge_game_developer_game_id
+    ON bridge_game_developer (game_id);
+
+CREATE INDEX ix_bridge_game_developer_developer_id
+    ON bridge_game_developer (developer_id);
 
 
 COMMIT;
