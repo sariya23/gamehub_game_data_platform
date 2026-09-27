@@ -112,7 +112,7 @@ def main():
             pipeline_date=pipeline_date.isoformat(),
         )
 
-        app = App(app_config=config, rate_limit_config=RateLimitConfig(20, 1))
+        app = App(app_config=config, rate_limit_config=RateLimitConfig(2, 1))
         app.minio.create_or_ignore_bucket(IMAGE_BUCKET)
         pipeline = SteamAppPipeline(
             app.steam_list_resource, app.steam_app_details_resource

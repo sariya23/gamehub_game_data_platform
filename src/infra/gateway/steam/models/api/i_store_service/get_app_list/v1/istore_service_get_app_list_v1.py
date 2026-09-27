@@ -10,8 +10,8 @@ class IStoreServiceGetAppListV1ResponseSteamApp(BaseModel):
 
 class IStoreServiceGetAppListV1Response(BaseModel):
     apps: list[IStoreServiceGetAppListV1ResponseSteamApp]
-    have_more_results: bool
-    last_appid: int
+    have_more_results: bool | None = None
+    last_appid: int | None = None
 
 
 class IStoreServiceGetAppListV1ResponseDTO(BaseModel):
