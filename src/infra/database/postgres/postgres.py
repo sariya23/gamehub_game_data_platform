@@ -26,7 +26,7 @@ class PostgresClient:
         games: Sequence[Game],
         *,
         source: str,
-    ) -> list[UUID]:
+    ) -> list[tuple[Game, UUID]]:
         source_ids = self.get_source_ids()
         rating_source_ids = self.get_rating_source_ids()
         platform_ids = self.get_platform_ids()
@@ -41,7 +41,7 @@ class PostgresClient:
                 platform_ids=platform_ids,
             )
             if game_id:
-                res.append(game_id)
+                res.append((game, game_id))
         return res
 
     def insert_game(
@@ -94,7 +94,7 @@ class PostgresClient:
                 platform_ids,
             )
 
-        return game_id
+            return game_id
 
     def insert_game_row(
         self,

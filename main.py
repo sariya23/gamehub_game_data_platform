@@ -1,28 +1,20 @@
 
-from collections.abc import Iterable, Iterator
-from itertools import islice
 
 import structlog
 
+from io import BytesIO
 from config import load_config
+from src.lib.image import get_image_mime, IMAGE_EXTENSIONS
 from src.app.app import App
 from src.infra.gateway.steam.models.api.i_store_service.get_app_list.v1.istore_service_get_app_list_v1 import (
     IStoreServiceGetAppListV1RequestDTO,
 )
+from src.lib.batched import batched
+from src.lib.http import download_image
 from src.lib.input.input import get_pipeline_date
 from src.lib.logging.logging import configure_logging, register_secrets
 from src.lib.rate_limit.rate_limit import RateLimitConfig
 from src.pipeline.steam import SteamAppPipelineDebug
-
-
-def batched(
-    iterable: Iterable,
-    batch_size: int,
-) -> Iterator[list]:
-    iterator = iter(iterable)
-
-    while batch := list(islice(iterator, batch_size)):
-        yield batch
 
 log = structlog.get_logger(__name__)
 configure_logging()
@@ -43,7 +35,7 @@ log.info(
 )
 
 app = App(app_config=config, rate_limit_config=RateLimitConfig(1, 1))
-
+app.minio.create_or_ignore_bucket("game-catalog")
 pipeline = SteamAppPipelineDebug(app.steam_list_resource, app.steam_app_details_resource)
 
 app_list = pipeline.get_list_apps(IStoreServiceGetAppListV1RequestDTO(), limit=10)
@@ -59,7 +51,31 @@ platform_ids = app.postgres.get_platform_ids()
 for batch in batched(games, BATCH_SIZE):
     source_id = source_ids["steam"]
 
-    app.postgres.insert_games(
+    games = app.postgres.insert_games(
         batch,
         source="steam"
     )
+    
+    for game, game_uuid in games:
+        header_image = None
+        screenshots = []
+        try:
+            if game.header_image_url:
+                header_image = download_image(game.header_image_url)
+                image_type = get_image_mime(header_image)
+                object_key = app.minio.build_object_key("game_catalog", "steam", "header_image", pipeline_date, f"{game_uuid}-header-image{IMAGE_EXTENSIONS[image_type]}")
+                app.minio.upload_file(BytesIO(header_image), object_key, len(header_image), "game_catalog")
+            if game.screenshots:
+                for screen_url in game.screenshots:
+                    screen = download_image(screen_url)
+                    image_type = get_image_mime(screen)
+                    object_key = app.minio.build_object_key("game_catalog", "steam", "screen", pipeline_date, f"{game_uuid}-screen{IMAGE_EXTENSIONS[image_type]}")
+                    app.minio.upload_file(BytesIO(screen), object_key, len(screen), "game_catalog")
+        except Exception as e:
+            log.exception(f"error while load screen {e}")
+            continue
+        
+        
+        
+            
+    
