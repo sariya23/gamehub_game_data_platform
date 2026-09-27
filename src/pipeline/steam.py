@@ -77,7 +77,7 @@ class SteamAppPipeline:
                             developers=game_resp.developers if game_resp.developers else [],
                             steam_url=f"https://store.steampowered.com/app/{game_resp.steam_appid}")
                 if m := game_resp.metacritic:
-                    game.ratings.append(Rating(source="metactiric", value=m.score, url=m.url))
+                    game.ratings.append(Rating(source="metacritic", value=m.score, url=m.url))
                 if game_resp.recommendations:
                     game.ratings.append(Rating(source="steam", value=game_resp.recommendations.total))
                 if d := game_resp.release_date:

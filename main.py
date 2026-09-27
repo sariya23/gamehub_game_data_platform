@@ -52,15 +52,14 @@ app_details = pipeline.get_list_apps_details(app_list)
 
 BATCH_SIZE = 100
 games = pipeline.iter_to_domain_games(pipeline.iter_raw_games(app_details))
-
 source_ids = app.postgres.get_source_ids()
 rating_source_ids = app.postgres.get_rating_source_ids()
 platform_ids = app.postgres.get_platform_ids()
 
-steam_source_id = source_ids["steam"]
-steam_rating_source_id = rating_source_ids["steam"]
-metacritic_rating_source_id = rating_source_ids["metacritic"]
+for batch in batched(games, BATCH_SIZE):
+    source_id = source_ids["steam"]
 
-windows_platform_id = platform_ids["windows"]
-mac_platform_id = platform_ids["macos"]
-linux_platform_id = platform_ids["linux"]
+    app.postgres.insert_games(
+        batch,
+        source="steam"
+    )

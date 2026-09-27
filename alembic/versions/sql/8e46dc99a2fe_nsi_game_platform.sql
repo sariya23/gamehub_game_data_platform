@@ -4,7 +4,7 @@ FROM (VALUES
     ('windows', 'pc'),
     ('macos', 'pc'),
     ('linux', 'pc'),
-    ('steamos', 'pc')
+    ('steamos', 'pc'),
     ('ps5', 'console'),
     ('ps4', 'console'),
     ('ps3', 'console'),
