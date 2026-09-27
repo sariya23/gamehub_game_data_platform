@@ -53,6 +53,7 @@ class SteamAppListResource:
                 batch_size=len(apps),
                 last_appid=last_appid,
             )
+            log.debug(response.response)
 
             last_appid = response.response.last_appid
             have_more_results = response.response.have_more_results

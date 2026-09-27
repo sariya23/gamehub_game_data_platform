@@ -69,7 +69,7 @@ def _redact(logger, method_name, event):
 
 
 def configure_logging() -> None:
-    level = os.getenv("LOG_LEVEL", "INFO").upper()
+    level = os.getenv("LOG_LEVEL", "DEBUG").upper()
     if level not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
         raise ValueError(f"Unsupported LOG_LEVEL: {level}")
     log_format = os.getenv("LOG_FORMAT", "console").lower()

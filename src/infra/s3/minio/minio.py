@@ -37,6 +37,7 @@ class Minio:
             log.info("s3.object_uploaded", bucket=bucket_name, object_key=object_name, size_bytes=l)
         except S3Error as error:
             log.exception("s3.upload_failed", operation="put_object", bucket=bucket_name, object_key=object_name, size_bytes=l, error_type=type(error).__name__)
+            raise
 
     def get_files(self, bucket_name: str, file_group: str) -> Iterator[bytes]:
         for object_info in self.__client.list_objects(
