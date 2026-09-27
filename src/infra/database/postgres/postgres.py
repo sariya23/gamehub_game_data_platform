@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 import psycopg
 
 from config import Config
+from src.models.dto.game_image import GameImageDTO
 from src.models.steam.game import Game, Genre, Rating
 
 
@@ -20,12 +21,12 @@ class PostgresClient:
 
     def close(self) -> None:
         self.__conn.close()
-        
+
     def insert_games(
-        self,
-        games: Sequence[Game],
-        *,
-        source: str,
+            self,
+            games: Sequence[Game],
+            *,
+            source: str,
     ) -> list[tuple[Game, UUID]]:
         source_ids = self.get_source_ids()
         rating_source_ids = self.get_rating_source_ids()
@@ -45,12 +46,12 @@ class PostgresClient:
         return res
 
     def insert_game(
-        self,
-        game: Game,
-        *,
-        source_id: int,
-        rating_source_ids: dict[str, int],
-        platform_ids: dict[str, int],
+            self,
+            game: Game,
+            *,
+            source_id: int,
+            rating_source_ids: dict[str, int],
+            platform_ids: dict[str, int],
     ) -> UUID | None:
         with self.__conn.transaction():
             game_id = self.insert_game_row(
@@ -77,11 +78,6 @@ class PostgresClient:
                 rating_source_ids,
             )
 
-            self.insert_images(
-                game_id,
-                game,
-            )
-
             self.insert_platforms(
                 game_id,
                 game,
@@ -97,34 +93,29 @@ class PostgresClient:
             return game_id
 
     def insert_game_row(
-        self,
-        game: Game,
-        source_id: int,
+            self,
+            game: Game,
+            source_id: int,
     ) -> UUID | None:
         game_id = uuid4()
 
         row = self.__conn.execute(
             """
-            INSERT INTO game (
-                id,
-                source_id,
-                external_id,
-                name,
-                full_description,
-                short_description
-            )
-            VALUES (
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s
-            )
-            ON CONFLICT (source_id, external_id)
+            INSERT INTO game (id,
+                              source_id,
+                              external_id,
+                              name,
+                              full_description,
+                              short_description)
+            VALUES (%s,
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    %s) ON CONFLICT (source_id, external_id)
             WHERE deleted_at IS NULL
-            DO NOTHING
-            RETURNING id
+                DO NOTHING
+                RETURNING id
             """,
             (
                 game_id,
@@ -142,9 +133,9 @@ class PostgresClient:
         return row[0]
 
     def insert_developers(
-        self,
-        game_id: UUID,
-        developers: Sequence[str],
+            self,
+            game_id: UUID,
+            developers: Sequence[str],
     ) -> None:
         names = list({
             developer
@@ -160,15 +151,13 @@ class PostgresClient:
         with self.__conn.cursor() as cur:
             cur.executemany(
                 """
-                INSERT INTO game_developer (
-                    name
-                )
-                VALUES (%s)
-                ON CONFLICT (name)
+                INSERT INTO game_developer (name)
+                VALUES (%s) ON CONFLICT (name)
                 WHERE deleted_at IS NULL
-                DO UPDATE SET
+                    DO
+                UPDATE SET
                     name = EXCLUDED.name
-                RETURNING id, name
+                    RETURNING id, name
                 """,
                 [
                     (name,)
@@ -189,14 +178,11 @@ class PostgresClient:
         with self.__conn.cursor() as cur:
             cur.executemany(
                 """
-                INSERT INTO bridge_game_developer (
-                    game_id,
-                    developer_id
-                )
-                VALUES (%s, %s)
-                ON CONFLICT (game_id, developer_id)
+                INSERT INTO bridge_game_developer (game_id,
+                                                   developer_id)
+                VALUES (%s, %s) ON CONFLICT (game_id, developer_id)
                 WHERE deleted_at IS NULL
-                DO NOTHING
+                    DO NOTHING
                 """,
                 [
                     (
@@ -208,9 +194,9 @@ class PostgresClient:
             )
 
     def insert_genres(
-        self,
-        game_id: UUID,
-        genres: Sequence[Genre],
+            self,
+            game_id: UUID,
+            genres: Sequence[Genre],
     ) -> None:
         names = list({
             genre.name
@@ -226,15 +212,13 @@ class PostgresClient:
         with self.__conn.cursor() as cur:
             cur.executemany(
                 """
-                INSERT INTO nsi_game_genre (
-                    name
-                )
-                VALUES (%s)
-                ON CONFLICT (name)
+                INSERT INTO nsi_game_genre (name)
+                VALUES (%s) ON CONFLICT (name)
                 WHERE deleted_at IS NULL
-                DO UPDATE SET
+                    DO
+                UPDATE SET
                     name = EXCLUDED.name
-                RETURNING id, name
+                    RETURNING id, name
                 """,
                 [
                     (name,)
@@ -255,14 +239,11 @@ class PostgresClient:
         with self.__conn.cursor() as cur:
             cur.executemany(
                 """
-                INSERT INTO bridge_game_genre (
-                    game_id,
-                    genre_id
-                )
-                VALUES (%s, %s)
-                ON CONFLICT (game_id, genre_id)
+                INSERT INTO bridge_game_genre (game_id,
+                                               genre_id)
+                VALUES (%s, %s) ON CONFLICT (game_id, genre_id)
                 WHERE deleted_at IS NULL
-                DO NOTHING
+                    DO NOTHING
                 """,
                 [
                     (
@@ -274,10 +255,10 @@ class PostgresClient:
             )
 
     def insert_ratings(
-        self,
-        game_id: UUID,
-        ratings: Sequence[Rating],
-        rating_source_ids: dict[str, int],
+            self,
+            game_id: UUID,
+            ratings: Sequence[Rating],
+            rating_source_ids: dict[str, int],
     ) -> None:
         if not ratings:
             return
@@ -295,21 +276,17 @@ class PostgresClient:
         with self.__conn.cursor() as cur:
             cur.executemany(
                 """
-                INSERT INTO game_rating (
-                    game_id,
-                    rating_source_id,
-                    value,
-                    url
-                )
-                VALUES (
-                    %s,
-                    %s,
-                    %s,
-                    %s
-                )
-                ON CONFLICT (game_id, rating_source_id)
+                INSERT INTO game_rating (game_id,
+                                         rating_source_id,
+                                         value,
+                                         url)
+                VALUES (%s,
+                        %s,
+                        %s,
+                        %s) ON CONFLICT (game_id, rating_source_id)
                 WHERE deleted_at IS NULL
-                DO UPDATE SET
+                    DO
+                UPDATE SET
                     value = EXCLUDED.value,
                     url = EXCLUDED.url,
                     updated_at = NOW() AT TIME ZONE 'UTC'
@@ -318,56 +295,46 @@ class PostgresClient:
             )
 
     def insert_images(
-        self,
-        game_id: UUID,
-        game: Game,
+            self,
+            game_id: UUID,
+            images: list[GameImageDTO],
     ) -> None:
-        rows = []
+        if not images:
+            return
 
-        if game.header_image_url:
-            rows.append(
-                (
-                    game_id,
-                    game.header_image_url,
-                    False,
-                )
-            )
-
-        rows.extend(
+        rows = [
             (
                 game_id,
-                url,
-                True,
+                image.source_url,
+                image.bucket,
+                image.object_key,
+                image.screenshot,
             )
-            for url in game.screenshots
-            if url
-        )
-
-        if not rows:
-            return
+            for image in images
+        ]
 
         with self.__conn.cursor() as cur:
             cur.executemany(
                 """
-                INSERT INTO game_image (
-                    game_id,
-                    source_url,
-                    screenshot
-                )
-                VALUES (
-                    %s,
-                    %s,
-                    %s
-                )
+                INSERT INTO game_image (game_id,
+                                        source_url,
+                                        bucket,
+                                        object_key,
+                                        screenshot)
+                VALUES (%s,
+                        %s,
+                        %s,
+                        %s,
+                        %s)
                 """,
                 rows,
             )
-            
+
     def insert_platforms(
-        self,
-        game_id: UUID,
-        game: Game,
-        platform_ids: dict[str, int],
+            self,
+            game_id: UUID,
+            game: Game,
+            platform_ids: dict[str, int],
     ) -> None:
         platform_names = game.get_game_platform_names()
 
@@ -377,17 +344,12 @@ class PostgresClient:
         with self.__conn.cursor() as cur:
             cur.executemany(
                 """
-                INSERT INTO bridge_game_platform (
-                    game_id,
-                    platform_id
-                )
-                VALUES (
-                    %s,
-                    %s
-                )
-                ON CONFLICT (game_id, platform_id)
+                INSERT INTO bridge_game_platform (game_id,
+                                                  platform_id)
+                VALUES (%s,
+                        %s) ON CONFLICT (game_id, platform_id)
                 WHERE deleted_at IS NULL
-                DO NOTHING
+                    DO NOTHING
                 """,
                 [
                     (
@@ -398,12 +360,11 @@ class PostgresClient:
                 ],
             )
 
-
     def insert_release_dates(
-        self,
-        game_id: UUID,
-        game: Game,
-        platform_ids: dict[str, int],
+            self,
+            game_id: UUID,
+            game: Game,
+            platform_ids: dict[str, int],
     ) -> None:
         if game.release_date is None:
             return
@@ -416,19 +377,15 @@ class PostgresClient:
         with self.__conn.cursor() as cur:
             cur.executemany(
                 """
-                INSERT INTO game_release_date (
-                    game_id,
-                    platform_id,
-                    release_date
-                )
-                VALUES (
-                    %s,
-                    %s,
-                    %s
-                )
-                ON CONFLICT (game_id, platform_id)
+                INSERT INTO game_release_date (game_id,
+                                               platform_id,
+                                               release_date)
+                VALUES (%s,
+                        %s,
+                        %s) ON CONFLICT (game_id, platform_id)
                 WHERE deleted_at IS NULL
-                DO UPDATE SET
+                    DO
+                UPDATE SET
                     release_date = EXCLUDED.release_date,
                     updated_at = NOW() AT TIME ZONE 'UTC'
                 """,
@@ -443,7 +400,7 @@ class PostgresClient:
             )
 
     def get_source_ids(
-        self,
+            self,
     ) -> dict[str, int]:
         rows = self.__conn.execute(
             """
@@ -458,7 +415,7 @@ class PostgresClient:
         }
 
     def get_rating_source_ids(
-        self,
+            self,
     ) -> dict[str, int]:
         rows = self.__conn.execute(
             """
@@ -473,7 +430,7 @@ class PostgresClient:
         }
 
     def get_platform_ids(
-        self,
+            self,
     ) -> dict[str, int]:
         rows = self.__conn.execute(
             """

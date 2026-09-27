@@ -2,6 +2,7 @@ import structlog
 
 from io import BytesIO
 from config import load_config
+from src.models.dto.game_image import GameImageDTO
 from src.lib.image import get_image_mime, IMAGE_EXTENSIONS
 from src.app.app import App
 from src.infra.gateway.steam.models.api.i_store_service.get_app_list.v1.istore_service_get_app_list_v1 import (
@@ -53,6 +54,7 @@ for batch in batched(games, BATCH_SIZE):
         source="steam"
     )
 
+    images_dto = []
     for game, game_uuid in games:
         header_image = None
         screenshots = []
@@ -63,6 +65,9 @@ for batch in batched(games, BATCH_SIZE):
                 object_key = app.minio.build_object_key("game-catalog", "steam", "header_image", pipeline_date,
                                                         f"{game_uuid}-header-image{IMAGE_EXTENSIONS[image_type]}")
                 app.minio.upload_file(BytesIO(header_image), object_key, len(header_image), "game-catalog")
+                images_dto.append(
+                    GameImageDTO(source_url=game.header_image_url, bucket="game-catalog", object_key=object_key,
+                                 screenshot=False))
             if game.screenshots:
                 for screen_url in game.screenshots:
                     screen = download_image(screen_url)
@@ -70,6 +75,11 @@ for batch in batched(games, BATCH_SIZE):
                     object_key = app.minio.build_object_key("game-catalog", "steam", "screen", pipeline_date,
                                                             f"{game_uuid}-screen{IMAGE_EXTENSIONS[image_type]}")
                     app.minio.upload_file(BytesIO(screen), object_key, len(screen), "game-catalog")
+                    images_dto.append(
+                        GameImageDTO(source_url=screen_url, bucket="game-catalog", object_key=object_key,
+                                     screenshot=True))
+
+            app.postgres.insert_images(game_uuid, images_dto)
         except Exception as e:
             log.exception(f"error while load screen {e}")
             continue
