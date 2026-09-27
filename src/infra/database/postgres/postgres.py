@@ -26,20 +26,23 @@ class PostgresClient:
         games: Sequence[Game],
         *,
         source: str,
-    ) -> None:
+    ) -> list[UUID]:
         source_ids = self.get_source_ids()
         rating_source_ids = self.get_rating_source_ids()
         platform_ids = self.get_platform_ids()
 
         source_id = source_ids[source]
-
+        res = []
         for game in games:
-            self.insert_game(
+            game_id = self.insert_game(
                 game,
                 source_id=source_id,
                 rating_source_ids=rating_source_ids,
                 platform_ids=platform_ids,
             )
+            if game_id:
+                res.append(game_id)
+        return res
 
     def insert_game(
         self,
@@ -48,7 +51,7 @@ class PostgresClient:
         source_id: int,
         rating_source_ids: dict[str, int],
         platform_ids: dict[str, int],
-    ) -> bool:
+    ) -> UUID | None:
         with self.__conn.transaction():
             game_id = self.insert_game_row(
                 game,
@@ -56,7 +59,7 @@ class PostgresClient:
             )
 
             if game_id is None:
-                return False
+                return None
 
             self.insert_developers(
                 game_id,
@@ -91,7 +94,7 @@ class PostgresClient:
                 platform_ids,
             )
 
-        return True
+        return game_id
 
     def insert_game_row(
         self,
