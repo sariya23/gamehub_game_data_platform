@@ -6,12 +6,20 @@ import structlog
 from minio import Minio as MinioClient
 from minio.error import S3Error
 
+from config import Config
+
 log = structlog.get_logger(__name__)
 
 
 class Minio:
-    def __init__(self, client: MinioClient):
-        self.__client = client
+    def __init__(self, config: Config):
+        self.__client = MinioClient(access_key=config.s3.root_user, secret_key=config.s3.root_password.get_secret_value(), 
+                    endpoint=f"{config.s3.host}:{config.s3.api_port}", secure=config.s3.secure)
+        try:
+            self.__client.list_buckets()
+            log.info("s3.client_ready", host=config.s3.host, port=config.s3.api_port)
+        except Exception as e:
+            log.exception(f"failed to connect to Minio s3 with exo {e}")
 
     def create_or_ignore_bucket(self, bucket_name: str):
         found = self.__client.bucket_exists(bucket_name)
