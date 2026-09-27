@@ -54,10 +54,10 @@ for batch in batched(games, BATCH_SIZE):
         source="steam"
     )
 
-    images_dto = []
     for game, game_uuid in games:
         header_image = None
         screenshots = []
+        images_dto = []
         try:
             if game.header_image_url:
                 header_image = download_image(game.header_image_url)
@@ -69,11 +69,11 @@ for batch in batched(games, BATCH_SIZE):
                     GameImageDTO(source_url=game.header_image_url, bucket="game-catalog", object_key=object_key,
                                  screenshot=False))
             if game.screenshots:
-                for screen_url in game.screenshots:
+                for i, screen_url in enumerate(game.screenshots):
                     screen = download_image(screen_url)
                     image_type = get_image_mime(screen)
                     object_key = app.minio.build_object_key("game-catalog", "steam", "screen", pipeline_date,
-                                                            f"{game_uuid}-screen{IMAGE_EXTENSIONS[image_type]}")
+                                                            f"{game_uuid}-screen-{i}{IMAGE_EXTENSIONS[image_type]}")
                     app.minio.upload_file(BytesIO(screen), object_key, len(screen), "game-catalog")
                     images_dto.append(
                         GameImageDTO(source_url=screen_url, bucket="game-catalog", object_key=object_key,
