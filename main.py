@@ -1,6 +1,7 @@
 import structlog
 
 from io import BytesIO
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from config import load_config
 from src.models.dto.game_image import GameImageDTO
 from src.lib.image import get_image_mime, IMAGE_EXTENSIONS
@@ -33,7 +34,7 @@ log.info(
     pipeline_date=pipeline_date.isoformat(),
 )
 
-app = App(app_config=config, rate_limit_config=RateLimitConfig(1, 1))
+app = App(app_config=config, rate_limit_config=RateLimitConfig(20, 1))
 app.minio.create_or_ignore_bucket("game-catalog")
 pipeline = SteamAppPipelineDebug(app.steam_list_resource, app.steam_app_details_resource)
 
@@ -43,8 +44,7 @@ app_details = pipeline.get_list_apps_details(app_list)
 BATCH_SIZE = 100
 games = pipeline.iter_to_domain_games(pipeline.iter_raw_games(app_details))
 source_ids = app.postgres.get_source_ids()
-rating_source_ids = app.postgres.get_rating_source_ids()
-platform_ids = app.postgres.get_platform_ids()
+
 
 for batch in batched(games, BATCH_SIZE):
     source_id = source_ids["steam"]
@@ -56,30 +56,70 @@ for batch in batched(games, BATCH_SIZE):
 
     for game, game_uuid in games:
         header_image = None
-        screenshots = []
         images_dto = []
-        try:
-            if game.header_image_url:
+        upload_jobs = []
+        if game.header_image_url:
+            try:
                 header_image = download_image(game.header_image_url)
                 image_type = get_image_mime(header_image)
                 object_key = app.minio.build_object_key("game-catalog", "steam", "header_image", pipeline_date,
                                                         f"{game_uuid}-header-image{IMAGE_EXTENSIONS[image_type]}")
-                app.minio.upload_file(BytesIO(header_image), object_key, len(header_image), "game-catalog")
-                images_dto.append(
-                    GameImageDTO(source_url=game.header_image_url, bucket="game-catalog", object_key=object_key,
-                                 screenshot=False))
-            if game.screenshots:
+                upload_jobs.append(
+                    (
+                        header_image,
+                        GameImageDTO(
+                            source_url=game.header_image_url,
+                            bucket="game-catalog",
+                            object_key=object_key,
+                            screenshot=False,
+                        ),
+                    )
+                )
+            except Exception as e:
+                log.exception(f"error while load header image {e}")
+                continue
+        if game.screenshots:
+            try:
                 for i, screen_url in enumerate(game.screenshots):
                     screen = download_image(screen_url)
                     image_type = get_image_mime(screen)
                     object_key = app.minio.build_object_key("game-catalog", "steam", "screen", pipeline_date,
                                                             f"{game_uuid}-screen-{i}{IMAGE_EXTENSIONS[image_type]}")
-                    app.minio.upload_file(BytesIO(screen), object_key, len(screen), "game-catalog")
-                    images_dto.append(
-                        GameImageDTO(source_url=screen_url, bucket="game-catalog", object_key=object_key,
-                                     screenshot=True))
+                    upload_jobs.append(
+                        (
+                            screen,
+                            GameImageDTO(
+                                source_url=screen_url,
+                                bucket="game-catalog",
+                                object_key=object_key,
+                                screenshot=True,
+                            ),
+                        )
+                    )
+            except Exception as e:
+                log.exception(f"error while load screen {e}")
+                continue
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = {
+                executor.submit(
+                    app.minio.upload_file,
+                    BytesIO(data),
+                    dto.object_key,
+                    len(data),
+                    dto.bucket,
+                ): dto
+                for data, dto in upload_jobs
+            }
 
-            app.postgres.insert_images(game_uuid, images_dto)
-        except Exception as e:
-            log.exception(f"error while load screen {e}")
-            continue
+            for future in as_completed(futures):
+                dto = futures[future]
+
+                try:
+                    future.result()
+                    images_dto.append(dto)
+                except Exception:
+                    log.exception(
+                        "Failed to upload image %s",
+                        dto.source_url,
+                    )
+        app.postgres.insert_images(game_uuid, images_dto)
