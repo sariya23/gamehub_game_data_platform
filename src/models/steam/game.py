@@ -33,4 +33,17 @@ class Game(BaseModel):
     available_on_windows: bool | None = False
     available_on_mac: bool | None = False
     available_on_linux: bool | None = False
-    
+
+    def get_game_platform_names(self) -> list[str]:
+        platforms = []
+
+        if self.available_on_windows:
+            platforms.append("windows")
+
+        if self.available_on_mac:
+            platforms.append("macos")
+
+        if self.available_on_linux:
+            platforms.append("linux")
+
+        return platforms

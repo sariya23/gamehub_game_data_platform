@@ -1,7 +1,10 @@
 INSERT INTO nsi_game_platform (name, platform_type_id)
 SELECT platform.name, platform_type.id
 FROM (VALUES
-    ('pc', 'pc'),
+    ('windows', 'pc'),
+    ('macos', 'pc'),
+    ('linux', 'pc'),
+    ('steamos', 'pc')
     ('ps5', 'console'),
     ('ps4', 'console'),
     ('ps3', 'console'),
