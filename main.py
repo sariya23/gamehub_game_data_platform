@@ -1,24 +1,15 @@
-import argparse
-from datetime import UTC, date, datetime
 
 import structlog
 
 from config import load_config
-from src.lib.input.input import get_pipeline_date
-from src.http.clients.steam import create_steam_api_http_client
-from src.infra.gateway.steam.constants import STEAM_API_BASE_URL, STEAM_STORE_BASE_URL
-from src.infra.gateway.steam.create import create_steam_api_client
+from src.app.app import App
 from src.infra.gateway.steam.models.api.i_store_service.get_app_list.v1.istore_service_get_app_list_v1 import (
     IStoreServiceGetAppListV1RequestDTO,
 )
+from src.lib.input.input import get_pipeline_date
 from src.lib.logging.logging import configure_logging, register_secrets
-from src.lib.rate_limit.create import create_rate_limiter
 from src.lib.rate_limit.rate_limit import RateLimitConfig
 from src.pipeline.steam import SteamAppPipelineDebug
-from src.resources.steam.create import (
-    create_steam_app_detail_resource,
-    create_steam_app_list_resource,
-)
 
 log = structlog.get_logger(__name__)
 configure_logging()
@@ -38,15 +29,9 @@ log.info(
     pipeline_date=pipeline_date.isoformat(),
 )
 
-steam_http_client = create_steam_api_http_client(config.steam)
-steam_api = create_steam_api_client(
-    steam_http_client, STEAM_STORE_BASE_URL, STEAM_API_BASE_URL
-)
-steam_list_resource = create_steam_app_list_resource(steam_api)
-rate_limiter = create_rate_limiter(RateLimitConfig(1, 1))
-steam_app_details_resource = create_steam_app_detail_resource(steam_api, rate_limiter)
+app = App(app_config=config, rate_limit_config=RateLimitConfig(1, 1))
 
-pipeline = SteamAppPipelineDebug(steam_list_resource, steam_app_details_resource)
+pipeline = SteamAppPipelineDebug(app.steam_list_resource, app.steam_app_details_resource)
 
 app_list = pipeline.get_list_apps(IStoreServiceGetAppListV1RequestDTO(), limit=10)
 app_details = pipeline.get_list_apps_details(app_list)
