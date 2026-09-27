@@ -1,5 +1,3 @@
-
-
 import structlog
 
 from io import BytesIO
@@ -41,7 +39,6 @@ pipeline = SteamAppPipelineDebug(app.steam_list_resource, app.steam_app_details_
 app_list = pipeline.get_list_apps(IStoreServiceGetAppListV1RequestDTO(), limit=10)
 app_details = pipeline.get_list_apps_details(app_list)
 
-
 BATCH_SIZE = 100
 games = pipeline.iter_to_domain_games(pipeline.iter_raw_games(app_details))
 source_ids = app.postgres.get_source_ids()
@@ -55,7 +52,7 @@ for batch in batched(games, BATCH_SIZE):
         batch,
         source="steam"
     )
-    
+
     for game, game_uuid in games:
         header_image = None
         screenshots = []
@@ -63,19 +60,16 @@ for batch in batched(games, BATCH_SIZE):
             if game.header_image_url:
                 header_image = download_image(game.header_image_url)
                 image_type = get_image_mime(header_image)
-                object_key = app.minio.build_object_key("game_catalog", "steam", "header_image", pipeline_date, f"{game_uuid}-header-image{IMAGE_EXTENSIONS[image_type]}")
-                app.minio.upload_file(BytesIO(header_image), object_key, len(header_image), "game_catalog")
+                object_key = app.minio.build_object_key("game-catalog", "steam", "header_image", pipeline_date,
+                                                        f"{game_uuid}-header-image{IMAGE_EXTENSIONS[image_type]}")
+                app.minio.upload_file(BytesIO(header_image), object_key, len(header_image), "game-catalog")
             if game.screenshots:
                 for screen_url in game.screenshots:
                     screen = download_image(screen_url)
                     image_type = get_image_mime(screen)
-                    object_key = app.minio.build_object_key("game_catalog", "steam", "screen", pipeline_date, f"{game_uuid}-screen{IMAGE_EXTENSIONS[image_type]}")
-                    app.minio.upload_file(BytesIO(screen), object_key, len(screen), "game_catalog")
+                    object_key = app.minio.build_object_key("game-catalog", "steam", "screen", pipeline_date,
+                                                            f"{game_uuid}-screen{IMAGE_EXTENSIONS[image_type]}")
+                    app.minio.upload_file(BytesIO(screen), object_key, len(screen), "game-catalog")
         except Exception as e:
             log.exception(f"error while load screen {e}")
             continue
-        
-        
-        
-            
-    

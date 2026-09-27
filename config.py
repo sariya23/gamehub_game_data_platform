@@ -3,12 +3,10 @@ from pathlib import Path
 from pydantic import BaseModel, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from src.types import Seconds
-
 
 class SteamRateLimiterConfig(BaseModel):
     requests: int
-    period_seconds: Seconds
+    period_seconds: int
 
 
 class SteamAuthKeyConfig(BaseModel):
@@ -16,7 +14,7 @@ class SteamAuthKeyConfig(BaseModel):
 
 
 class SteamHTTPConfig(BaseModel):
-    steam_api_response_timeout_seconds: Seconds
+    steam_api_response_timeout_seconds: int
 
 
 class SteamConfig(BaseModel):
