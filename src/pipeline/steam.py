@@ -8,7 +8,7 @@ from src.infra.gateway.steam.models.api.i_store_service.get_app_list.v1.istore_s
 )
 from src.lib.datetime.datetime import parse_release_date_from_human
 from src.models.raw.models import RawBatch, RawSteamApp, RawSteamAppLine
-from src.models.steam.game import Game, Genre
+from src.models.steam.game import Game, Genre, Rating
 from src.resources.steam.steam import SteamAppDetailResource, SteamAppListResource
 
 log = structlog.get_logger(__name__)
@@ -73,13 +73,13 @@ class SteamAppPipeline:
                             header_image_url=game_resp.header_image,
                             description=game_resp.detailed_description, short_description=(game_resp.short_description or game_resp.about_the_game),
                             genres=[Genre(name=i.description, steam_id=int(i.id or 0)) for i in game_resp.genres] if game_resp.genres else [], 
-                            screenshots=[(i.path_full or "") for i in game_resp.screenshots] if game_resp.screenshots else [],
-                            recommendations=int((game_resp.recommendations.total or 0) if game_resp.recommendations else 0), 
+                            screenshots=[(i.path_full or "") for i in game_resp.screenshots] if game_resp.screenshots else [], 
                             developers=game_resp.developers if game_resp.developers else [],
                             steam_url=f"https://store.steampowered.com/app/{game_resp.steam_appid}")
                 if m := game_resp.metacritic:
-                    game.metacritic_score = m.score
-                    game.metacritic_url = m.url
+                    game.ratings.append(Rating(source="metactiric", value=m.score, url=m.url))
+                if game_resp.recommendations:
+                    game.ratings.append(Rating(source="steam", value=game_resp.recommendations.total))
                 if d := game_resp.release_date:
                     game.release_date = parse_release_date_from_human(d.date) if d.date else None
                 if p := game_resp.platforms:

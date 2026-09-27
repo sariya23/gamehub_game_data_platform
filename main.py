@@ -1,4 +1,7 @@
 
+from collections.abc import Iterable, Iterator
+from itertools import islice
+
 import structlog
 
 from config import load_config
@@ -10,6 +13,16 @@ from src.lib.input.input import get_pipeline_date
 from src.lib.logging.logging import configure_logging, register_secrets
 from src.lib.rate_limit.rate_limit import RateLimitConfig
 from src.pipeline.steam import SteamAppPipelineDebug
+
+
+def batched(
+    iterable: Iterable,
+    batch_size: int,
+) -> Iterator[list]:
+    iterator = iter(iterable)
+
+    while batch := list(islice(iterator, batch_size)):
+        yield batch
 
 log = structlog.get_logger(__name__)
 configure_logging()
@@ -37,6 +50,17 @@ app_list = pipeline.get_list_apps(IStoreServiceGetAppListV1RequestDTO(), limit=1
 app_details = pipeline.get_list_apps_details(app_list)
 
 
-for game in pipeline.iter_to_domain_games(pipeline.iter_raw_games(app_details)):
-    print(game)
-    
+BATCH_SIZE = 100
+games = pipeline.iter_to_domain_games(pipeline.iter_raw_games(app_details))
+
+source_ids = app.postgres.get_source_ids()
+rating_source_ids = app.postgres.get_rating_source_ids()
+platform_ids = app.postgres.get_platform_ids()
+
+steam_source_id = source_ids["steam"]
+steam_rating_source_id = rating_source_ids["steam"]
+metacritic_rating_source_id = rating_source_ids["metacritic"]
+
+windows_platform_id = platform_ids["windows"]
+mac_platform_id = platform_ids["macos"]
+linux_platform_id = platform_ids["linux"]

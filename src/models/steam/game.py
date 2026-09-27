@@ -7,6 +7,10 @@ class Genre(BaseModel):
     steam_id: int | None = None
     name: str | None = None
 
+class Rating(BaseModel):
+    source: str
+    value: int | None = None
+    url: str | None = None
 
 class Game(BaseModel):
     name: str
@@ -18,13 +22,10 @@ class Game(BaseModel):
 
     developers: list[str] = Field(default_factory=list)
 
-    metacritic_score: int | None = None
-    metacritic_url: str | None = None
+    ratings: list[Rating] = Field(default_factory=list)
 
     genres: list[Genre] = Field(default_factory=list)
     screenshots: list[str] = Field(default_factory=list)
-
-    recommendations: int = 0
 
     release_date: date | None = None
 
