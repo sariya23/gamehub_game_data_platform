@@ -1,0 +1,2 @@
+ALTER TABLE game_image
+ALTER COLUMN storage_url DROP NOT NULL;
