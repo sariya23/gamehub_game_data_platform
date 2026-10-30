@@ -1,3 +1,5 @@
+import time
+
 import httpx
 import structlog
 
@@ -51,12 +53,15 @@ class SteamApi:
         base_url = httpx.URL(self.__base_store_url)
         response = None
         try:
-            response = self.__client.get(
-            url=base_url.join(APP_DETAILS_URL),
-            params=request.model_dump(exclude_none=True))
-
-            response.raise_for_status()
-            return AppDetailsResponseDTO.model_validate(response.json())
+            for attempt in range(4):
+                response = self.__client.get(
+                url=base_url.join(APP_DETAILS_URL),
+                params=request.model_dump(exclude_none=True))
+                if response.status_code != 429:
+                    response.raise_for_status()
+                    return AppDetailsResponseDTO.model_validate(response.json())
+                delay = min(5 * 2**attempt, 60)
+                time.sleep(delay)
         except Exception:
             log.exception(
                 "steam.request_failed", operation="get_app_details", app_id=request.appids,

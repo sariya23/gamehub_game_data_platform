@@ -125,6 +125,7 @@ class SteamAppDetailResource:
                     )
 
                 records.append(app_detail.model_dump(mode="json"))
+
             detail_batches.append(
                 RawBatch(
                     source=self.source_name,
@@ -133,5 +134,6 @@ class SteamAppDetailResource:
                     extracted_at=datetime.now(UTC),
                 )
             )
+
 
         return detail_batches
